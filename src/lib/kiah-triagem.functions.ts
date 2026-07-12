@@ -170,6 +170,7 @@ export const triarMensagem = createServerFn({ method: "POST" })
         descricao: it.descricao,
         categoria: it.categoria || "Outros",
         origem: data.origem,
+        user_id: data.user_id ?? null,
       }));
       const { error } = await supabaseAdmin.from("itens_lista").insert(linhas);
       if (error) throw new Error(`Falha inserindo itens: ${error.message}`);
@@ -186,8 +187,10 @@ export const triarMensagem = createServerFn({ method: "POST" })
       prazo_estimado: resultado.prazo_iso,
       cadencia_alerta_minutos: cadencia,
       origem: data.origem,
+      user_id: data.user_id ?? null,
     });
     if (error) throw new Error(`Falha inserindo tarefa: ${error.message}`);
+
 
     return { ok: true, classe: resultado.classe, resultado, criados: 1 };
   });
