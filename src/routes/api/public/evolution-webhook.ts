@@ -316,6 +316,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const texto = extrairTextoMensagem(msg);
         const grupo = ehJidGrupo(jid);
         const numeroCadastradoKiah = normalizarNumeroCadastro(numeroKiah());
+        const remetenteEhNumeroCadastrado = numeroRemetente === numeroCadastradoKiah;
 
         async function perfilPorNumero(numero: string) {
           const { data } = await supabaseAdmin
@@ -328,30 +329,14 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         }
 
         // Resolver dono:
-        // - Se o remetente direto é cadastrado, a tarefa é dele.
-        // - Se é contato externo não cadastrado, entra no número cadastrado da instância.
+        // - Toda conversa direta recebida por esta instância entra no número cadastrado da instância.
+        // - Só o próprio número cadastrado pode comandar/receber como remetente direto.
         // - Mensagens enviadas pela instância para contatos externos são ignoradas.
         // - Grupos nunca recebem resposta; viram item temporário do número cadastrado da instância.
         let userId: string | null = null;
         let numeroResposta = "";
 
-        const perfilRemetente = !grupo ? await perfilPorNumero(numeroRemetente) : null;
-
-        if (grupo) {
-          const donoNumeroCadastrado = await perfilPorNumero(numeroCadastradoKiah);
-          if (donoNumeroCadastrado?.id) {
-            userId = donoNumeroCadastrado.id;
-            numeroResposta = donoNumeroCadastrado.whatsapp_numero ?? numeroCadastradoKiah;
-          }
-        } else if (fromMe) {
-          if (perfilRemetente?.id && numeroRemetente === numeroCadastradoKiah) {
-            userId = perfilRemetente.id;
-            numeroResposta = perfilRemetente.whatsapp_numero ?? numeroRemetente;
-          }
-        } else if (perfilRemetente?.id) {
-          userId = perfilRemetente.id;
-          numeroResposta = perfilRemetente.whatsapp_numero ?? numeroRemetente;
-        } else {
+        if (grupo || !fromMe || remetenteEhNumeroCadastrado) {
           const donoNumeroCadastrado = await perfilPorNumero(numeroCadastradoKiah);
           if (donoNumeroCadastrado?.id) {
             userId = donoNumeroCadastrado.id;
@@ -415,7 +400,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         }
 
         // Se é texto puro, tentar comando primeiro
-        if (texto && !temImagem && !temAudio) {
+        if (remetenteEhNumeroCadastrado && texto && !temImagem && !temAudio) {
           const cmd = await tentarComando(texto, userId);
           if (cmd.tratado) {
             await enviarWhatsApp(cmd.resposta ?? "✅ Ok.", numeroResposta).catch(() => {});
