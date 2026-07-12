@@ -275,12 +275,11 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const numeroRemetente = jidParaNumero(jid);
         console.log("[kiah-webhook] numeroRemetente=", numeroRemetente);
 
-        // Resolver dono: 1º tenta o número do remetente (self-chat).
-        // Se não achar, cai pro dono da INSTÂNCIA (KIAH_WHATSAPP_NUMERO) —
-        // assim mensagens vindas de outros números caem na caixa do dono do Kiah.
+        // Resolver dono: SOMENTE pelo número do remetente vinculado em profiles.
+        // Se o número não estiver cadastrado por nenhum usuário, ignoramos —
+        // não há fallback pro dono da instância (evita gravar coisa de gente
+        // desconhecida na conta de outra pessoa).
         let userId: string | null = null;
-        let roteadoParaDono = false;
-        let numeroDono: string | null = null;
         {
           const { data: donoRem } = await supabaseAdmin
             .from("profiles")
@@ -291,29 +290,13 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           if (donoRem?.id) userId = donoRem.id;
         }
         if (!userId) {
-          const numeroInstancia = (process.env.KIAH_WHATSAPP_NUMERO ?? "").replace(/\D/g, "");
-          if (numeroInstancia) {
-            const { data: donoInst } = await supabaseAdmin
-              .from("profiles")
-              .select("id")
-              .eq("whatsapp_numero", numeroInstancia)
-              .limit(1)
-              .maybeSingle();
-            if (donoInst?.id) {
-              userId = donoInst.id;
-              roteadoParaDono = true;
-              numeroDono = numeroInstancia;
-              console.log("[kiah-webhook] roteado p/ dono da instância", numeroInstancia, "(remetente externo", numeroRemetente, ")");
-            }
-          }
-        }
-        if (!userId) {
-          console.log("[kiah-webhook] IGNORADO sem dono resolvível. remetente=", numeroRemetente, "fromMe=", fromMe);
+          console.log("[kiah-webhook] IGNORADO número não cadastrado. remetente=", numeroRemetente, "fromMe=", fromMe);
           return json({
             ok: true,
-            ignorado: `sem dono para remetente ${numeroRemetente} (fromMe=${fromMe})`,
+            ignorado: `número ${numeroRemetente} não vinculado a nenhuma conta Kiah`,
           });
         }
+
 
         // Destino da confirmação: se a mensagem veio de um contato externo
         // (roteada pro dono da instância), a confirmação vai APENAS pro dono —
