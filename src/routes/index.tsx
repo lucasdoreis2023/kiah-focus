@@ -468,6 +468,210 @@ function NovoItemBotao() {
   );
 }
 
+/* ---------------- Triagem IA (fase 2) ---------------- */
+
+function TriagemBotao() {
+  const [aberto, setAberto] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [processando, setProcessando] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [imagemBase64, setImagemBase64] = useState<string | null>(null);
+  const [imagemMime, setImagemMime] = useState<string | null>(null);
+  const [audioBase64, setAudioBase64] = useState<string | null>(null);
+  const [audioFormat, setAudioFormat] = useState<"webm" | "mp4" | "m4a" | null>(null);
+  const [gravando, setGravando] = useState(false);
+  const gravadorRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const triar = useServerFn(triarMensagem);
+  const qc = useQueryClient();
+
+  function limpar() {
+    setTexto("");
+    setImagemBase64(null);
+    setImagemMime(null);
+    setAudioBase64(null);
+    setAudioFormat(null);
+    setFeedback(null);
+  }
+
+  async function pickImagem(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const buf = await f.arrayBuffer();
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+    setImagemBase64(b64);
+    setImagemMime(f.type || "image/jpeg");
+  }
+
+  async function toggleGravacao() {
+    if (gravando) {
+      gravadorRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/mp4";
+      const rec = new MediaRecorder(stream, { mimeType: mime });
+      chunksRef.current = [];
+      rec.ondataavailable = (ev) => ev.data.size && chunksRef.current.push(ev.data);
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: mime });
+        const buf = await blob.arrayBuffer();
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+        setAudioBase64(b64);
+        setAudioFormat(mime.includes("webm") ? "webm" : "m4a");
+        setGravando(false);
+      };
+      gravadorRef.current = rec;
+      rec.start();
+      setGravando(true);
+    } catch {
+      setFeedback("Sem acesso ao microfone.");
+    }
+  }
+
+  async function enviar() {
+    if (!texto.trim() && !imagemBase64 && !audioBase64) {
+      setFeedback("Escreva algo, anexe imagem ou grave um áudio.");
+      return;
+    }
+    setProcessando(true);
+    setFeedback(null);
+    try {
+      const audio_format_final =
+        audioFormat === "mp4" ? "m4a" : (audioFormat ?? undefined);
+      const res = await triar({
+        data: {
+          texto,
+          origem: "manual",
+          imagem_base64: imagemBase64 ?? undefined,
+          imagem_mime: imagemMime ?? undefined,
+          audio_base64: audioBase64 ?? undefined,
+          audio_format: audio_format_final,
+        },
+      });
+      if (res.classe === "ruido") {
+        setFeedback("Kiah entendeu como ruído — nada acionável.");
+      } else {
+        setFeedback(
+          `✓ ${res.criados} registro(s) criado(s) como "${res.classe}".`,
+        );
+      }
+      qc.invalidateQueries({ queryKey: ["tarefas"] });
+      qc.invalidateQueries({ queryKey: ["itens_lista"] });
+      setTimeout(() => {
+        setAberto(false);
+        limpar();
+      }, 900);
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : "Falha na triagem.");
+    } finally {
+      setProcessando(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setAberto(true)}
+        className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+      >
+        <Sparkles className="size-4" /> Triar
+      </button>
+      {aberto && (
+        <Modal
+          titulo="Nova entrada bruta"
+          onClose={() => {
+            setAberto(false);
+            limpar();
+          }}
+        >
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Jogue tudo aqui — texto desconexo, foto de uma lista, ou áudio.
+              Kiah classifica e grava.
+            </p>
+            <textarea
+              autoFocus
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              rows={4}
+              placeholder="ex: preciso lançar frequência do 9B até amanhã, e comprar pó de café e sabão em pó"
+              className="w-full resize-none rounded-lg bg-input px-3 py-2.5 text-sm outline-none ring-ring focus:ring-2"
+            />
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs hover:bg-surface-2">
+                <ImageIcon className="size-3.5" />
+                {imagemBase64 ? "Imagem anexada" : "Anexar imagem"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={pickImagem}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={toggleGravacao}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs ${
+                  gravando
+                    ? "bg-urgent text-urgent-foreground"
+                    : "bg-surface hover:bg-surface-2"
+                }`}
+              >
+                <Mic className="size-3.5" />
+                {gravando
+                  ? "Parar gravação"
+                  : audioBase64
+                    ? "Regravar áudio"
+                    : "Gravar áudio"}
+              </button>
+              {(imagemBase64 || audioBase64) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImagemBase64(null);
+                    setImagemMime(null);
+                    setAudioBase64(null);
+                    setAudioFormat(null);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:bg-surface-2"
+                >
+                  <X className="size-3.5" /> Limpar anexos
+                </button>
+              )}
+            </div>
+            {feedback && (
+              <p className="rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
+                {feedback}
+              </p>
+            )}
+            <button
+              onClick={enviar}
+              disabled={processando}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            >
+              {processando ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" /> Kiah pensando…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="size-4" /> Triar com IA
+                </>
+              )}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </>
+  );
+}
+
 /* ---------------- primitivos ---------------- */
 
 function Modal({
