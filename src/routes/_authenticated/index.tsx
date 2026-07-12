@@ -20,6 +20,7 @@ import {
   History,
   User,
   CircleDot,
+  MessageCircle,
 } from "lucide-react";
 
 import { triarMensagem } from "@/lib/kiah-triagem.functions";
