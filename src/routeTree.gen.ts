@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as ApiPublicEvolutionWebhookRouteImport } from './routes/api/public/evolution-webhook'
 import { Route as ApiPublicAlertasPersistentesRouteImport } from './routes/api/public/alertas-persistentes'
 
@@ -27,6 +28,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicEvolutionWebhookRoute =
@@ -45,11 +51,13 @@ const ApiPublicAlertasPersistentesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/agenda': typeof AuthenticatedAgendaRoute
   '/api/public/alertas-persistentes': typeof ApiPublicAlertasPersistentesRoute
   '/api/public/evolution-webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/agenda': typeof AuthenticatedAgendaRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/alertas-persistentes': typeof ApiPublicAlertasPersistentesRoute
   '/api/public/evolution-webhook': typeof ApiPublicEvolutionWebhookRoute
@@ -58,6 +66,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/alertas-persistentes': typeof ApiPublicAlertasPersistentesRoute
   '/api/public/evolution-webhook': typeof ApiPublicEvolutionWebhookRoute
@@ -67,11 +76,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/agenda'
     | '/api/public/alertas-persistentes'
     | '/api/public/evolution-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/agenda'
     | '/'
     | '/api/public/alertas-persistentes'
     | '/api/public/evolution-webhook'
@@ -79,6 +90,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/agenda'
     | '/_authenticated/'
     | '/api/public/alertas-persistentes'
     | '/api/public/evolution-webhook'
@@ -114,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/agenda': {
+      id: '/_authenticated/agenda'
+      path: '/agenda'
+      fullPath: '/agenda'
+      preLoaderRoute: typeof AuthenticatedAgendaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/evolution-webhook': {
       id: '/api/public/evolution-webhook'
       path: '/api/public/evolution-webhook'
@@ -132,10 +151,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
