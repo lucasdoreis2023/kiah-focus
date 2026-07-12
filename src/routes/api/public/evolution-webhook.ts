@@ -267,16 +267,24 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
             },
           });
 
-          const resumo =
-            res.classe === "ruido"
-              ? "🫧 Recebi, mas nada acionável — arquivado como ruído."
-              : res.classe === "lista_compras"
-                ? `🛒 Adicionei ${res.criados} item(ns) na lista de compras.`
-                : res.classe === "tarefa_urgente"
-                  ? `🔥 Tarefa URGENTE registrada: ${res.resultado.descricao_limpa}`
-                  : res.classe === "academico"
-                    ? `📘 Tarefa acadêmica registrada: ${res.resultado.descricao_limpa}`
-                    : `📝 Tarefa registrada: ${res.resultado.descricao_limpa}`;
+          const partes: string[] = [];
+          if (res.ruido) {
+            partes.push("🫧 Recebi, mas nada acionável — arquivado como ruído.");
+          } else {
+            const itens = res.resultado.itens_compra ?? [];
+            const tarefas = res.resultado.tarefas ?? [];
+            if (itens.length) {
+              partes.push(`🛒 ${itens.length} item(ns) na lista: ${itens.map((i) => i.descricao).join(", ")}`);
+            }
+            for (const t of tarefas) {
+              const icone =
+                t.tipo === "tarefa_urgente" ? "🔥 URGENTE" :
+                t.tipo === "academico" ? "📘 Acadêmica" : "📝 Tarefa";
+              partes.push(`${icone}: ${t.descricao_limpa}`);
+            }
+            if (!partes.length) partes.push("✓ Recebido.");
+          }
+          const resumo = partes.join("\n");
 
           await enviarWhatsApp(resumo, numeroRemetente).catch((e) =>
             console.error("[kiah-webhook] envio confirmação falhou", e),
