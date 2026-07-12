@@ -24,6 +24,7 @@ export type Database = {
           id: string
           origem: Database["public"]["Enums"]["origem_demanda"]
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           categoria?: string
@@ -34,6 +35,7 @@ export type Database = {
           id?: string
           origem?: Database["public"]["Enums"]["origem_demanda"]
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           categoria?: string
@@ -44,6 +46,34 @@ export type Database = {
           id?: string
           origem?: Database["public"]["Enums"]["origem_demanda"]
           updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          nome: string | null
+          updated_at: string
+          whatsapp_numero: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          nome?: string | null
+          updated_at?: string
+          whatsapp_numero?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          nome?: string | null
+          updated_at?: string
+          whatsapp_numero?: string | null
         }
         Relationships: []
       }
@@ -62,6 +92,7 @@ export type Database = {
           tipo_demanda: Database["public"]["Enums"]["tipo_demanda"]
           ultimo_alerta_em: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           adiamentos?: number
@@ -77,6 +108,7 @@ export type Database = {
           tipo_demanda?: Database["public"]["Enums"]["tipo_demanda"]
           ultimo_alerta_em?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           adiamentos?: number
@@ -92,6 +124,28 @@ export type Database = {
           tipo_demanda?: Database["public"]["Enums"]["tipo_demanda"]
           ultimo_alerta_em?: string | null
           updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -100,9 +154,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "user"
       origem_demanda:
         | "whatsapp_pessoal"
         | "whatsapp_terceiros"
@@ -241,6 +302,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       origem_demanda: [
         "whatsapp_pessoal",
         "whatsapp_terceiros",
