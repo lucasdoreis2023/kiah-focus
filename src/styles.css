@@ -6,8 +6,8 @@
 
 /*
  * Kiah — Segundo Cérebro
- * Design system minimalista, alto contraste, baixa distração.
- * Uma única tarefa "AGORA" em destaque quente. Fundo grafite calmo.
+ * Charcoal & Ember: escuro premium, brasa quente pontual (foco absoluto no AGORA).
+ * Urbanist (títulos) + Epilogue (corpo).
  */
 
 @theme inline {
@@ -35,6 +35,9 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
 
+  --color-ember: var(--ember);
+  --color-ember-foreground: var(--ember-foreground);
+
   --color-urgent: var(--urgent);
   --color-urgent-foreground: var(--urgent-foreground);
   --color-success: var(--success);
@@ -45,47 +48,54 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
 
-  --font-display: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Urbanist", system-ui, sans-serif;
+  --font-sans: "Epilogue", system-ui, sans-serif;
 
-  --shadow-focus: 0 20px 60px -20px oklch(0.55 0.22 25 / 0.55);
+  --shadow-focus: 0 20px 80px -20px oklch(0.62 0.19 40 / 0.35);
+  --shadow-ember: 0 0 40px -5px oklch(0.62 0.19 40 / 0.25);
 }
 
 :root {
   --radius: 0.9rem;
 
-  --background: oklch(0.16 0.015 260);
-  --foreground: oklch(0.97 0.005 260);
+  /* Charcoal & Ember — hex targets: #1a1a1a / #2d2d2d / #4a4a4a / #e85d3a */
+  --background: oklch(0.18 0 0);          /* #1a1a1a */
+  --foreground: oklch(0.96 0 0);          /* #f5f5f5 */
 
-  --surface: oklch(0.20 0.018 260);
-  --surface-2: oklch(0.24 0.020 260);
+  --surface: oklch(0.26 0 0);             /* #2d2d2d */
+  --surface-2: oklch(0.30 0 0);
 
-  --card: oklch(0.22 0.020 260);
-  --card-foreground: oklch(0.97 0.005 260);
+  --card: oklch(0.26 0 0);
+  --card-foreground: oklch(0.96 0 0);
 
-  --muted: oklch(0.28 0.015 260);
-  --muted-foreground: oklch(0.72 0.015 260);
+  --muted: oklch(0.34 0 0);
+  --muted-foreground: oklch(0.68 0 0);    /* #a1a1a1 */
 
-  --border: oklch(0.32 0.015 260);
-  --input: oklch(0.30 0.015 260);
-  --ring: oklch(0.65 0.20 25);
+  --border: oklch(0.40 0 0);              /* #4a4a4a */
+  --input: oklch(0.30 0 0);
+  --ring: oklch(0.62 0.19 40);
 
-  --primary: oklch(0.72 0.16 60);           /* âmbar quente */
-  --primary-foreground: oklch(0.18 0.02 60);
+  /* Ember — brasa quente */
+  --ember: oklch(0.62 0.19 40);           /* #e85d3a */
+  --ember-foreground: oklch(0.99 0.01 40);
 
-  --accent: oklch(0.75 0.14 200);
-  --accent-foreground: oklch(0.15 0.02 200);
+  --primary: oklch(0.62 0.19 40);
+  --primary-foreground: oklch(0.99 0.01 40);
 
-  --urgent: oklch(0.65 0.24 25);            /* vermelho-laranja atenção */
-  --urgent-foreground: oklch(0.99 0.01 25);
+  --accent: oklch(0.30 0 0);
+  --accent-foreground: oklch(0.96 0 0);
 
-  --success: oklch(0.72 0.18 150);
+  --urgent: oklch(0.62 0.19 40);
+  --urgent-foreground: oklch(0.99 0.01 40);
+
+  --success: oklch(0.72 0.16 150);
   --success-foreground: oklch(0.15 0.02 150);
 
   --warning: oklch(0.80 0.18 85);
   --warning-foreground: oklch(0.20 0.03 85);
 
-  --destructive: oklch(0.60 0.24 20);
-  --destructive-foreground: oklch(0.99 0.01 20);
+  --destructive: oklch(0.60 0.24 25);
+  --destructive-foreground: oklch(0.99 0.01 25);
 }
 
 @layer base {
@@ -96,7 +106,17 @@
   html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
 }
+
+@utility ember-glow {
+  box-shadow: var(--shadow-ember);
+}
+
