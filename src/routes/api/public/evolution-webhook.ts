@@ -260,10 +260,8 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const jid = d?.key?.remoteJid ?? "";
         const fromMe = d?.key?.fromMe === true;
         console.log("[kiah-webhook] jid=", jid, "fromMe=", fromMe, "messageType=", d?.messageType, "pushName=", d?.pushName);
-        if (fromMe) {
-          console.log("[kiah-webhook] IGNORADO fromMe=true");
-          return json({ ok: true, ignorado: "fromMe" });
-        }
+        // fromMe pode ser válido no cenário self-chat (Kiah roda no mesmo número).
+        // Filtramos abaixo só o eco das próprias respostas do bot.
 
         const { jidParaNumero, enviarWhatsApp, baixarMidiaBase64 } = await import(
           "@/lib/kiah-whatsapp.server"
