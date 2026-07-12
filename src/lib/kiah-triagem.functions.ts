@@ -169,14 +169,16 @@ export const triarMensagem = createServerFn({ method: "POST" })
 
     const resultado = await chamarGemini(apiKey, partes, modelo);
 
-    // Persistir — usa cliente admin (fase single-user pré-auth).
+    // Persistir — usa cliente admin (permite user_id explícito).
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    if (resultado.classe === "ruido") {
-      return { ok: true, classe: resultado.classe, resultado, criados: 0 };
+    if (resultado.ruido) {
+      return { ok: true, ruido: true, resultado, criados: 0 };
     }
 
-    if (resultado.classe === "lista_compras" && resultado.itens_compra?.length) {
+    let criados = 0;
+
+    if (resultado.itens_compra?.length) {
       const linhas = resultado.itens_compra.map((it) => ({
         descricao: it.descricao,
         categoria: it.categoria || "Outros",
@@ -185,23 +187,23 @@ export const triarMensagem = createServerFn({ method: "POST" })
       }));
       const { error } = await supabaseAdmin.from("itens_lista").insert(linhas);
       if (error) throw new Error(`Falha inserindo itens: ${error.message}`);
-      return { ok: true, classe: resultado.classe, resultado, criados: linhas.length };
+      criados += linhas.length;
     }
 
-    // Tarefa (urgente / rotina / academico)
-    const cadencia =
-      resultado.classe === "tarefa_urgente" || resultado.classe === "academico" ? 30 : 120;
+    if (resultado.tarefas?.length) {
+      const linhas = resultado.tarefas.map((t) => ({
+        descricao_limpa: t.descricao_limpa,
+        tipo_demanda: t.tipo,
+        prazo_estimado: t.prazo_iso,
+        cadencia_alerta_minutos:
+          t.tipo === "tarefa_urgente" || t.tipo === "academico" ? 30 : 120,
+        origem: data.origem,
+        user_id: data.user_id ?? null,
+      }));
+      const { error } = await supabaseAdmin.from("tarefas").insert(linhas);
+      if (error) throw new Error(`Falha inserindo tarefa: ${error.message}`);
+      criados += linhas.length;
+    }
 
-    const { error } = await supabaseAdmin.from("tarefas").insert({
-      descricao_limpa: resultado.descricao_limpa,
-      tipo_demanda: resultado.classe,
-      prazo_estimado: resultado.prazo_iso,
-      cadencia_alerta_minutos: cadencia,
-      origem: data.origem,
-      user_id: data.user_id ?? null,
-    });
-    if (error) throw new Error(`Falha inserindo tarefa: ${error.message}`);
-
-
-    return { ok: true, classe: resultado.classe, resultado, criados: 1 };
+    return { ok: true, ruido: false, resultado, criados };
   });
