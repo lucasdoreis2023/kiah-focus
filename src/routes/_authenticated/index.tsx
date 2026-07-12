@@ -182,47 +182,73 @@ function PainelKiah() {
 
 function SidebarKiah() {
   const itens = [
-    { label: "Hoje", icon: <CircleDot className="size-4" />, ativo: true },
-    { label: "Agenda", icon: <CalendarDays className="size-4" />, ativo: false },
-    { label: "Lista", icon: <ShoppingBasket className="size-4" />, ativo: false },
-    { label: "Histórico", icon: <History className="size-4" />, ativo: false },
-  ];
+    { to: "/", label: "Hoje", icon: <CircleDot className="size-4" />, exact: true },
+    { to: "/agenda", label: "Agenda", icon: <CalendarDays className="size-4" />, exact: false },
+    { to: "/lista", label: "Lista", icon: <ShoppingBasket className="size-4" />, exact: false },
+    { to: "/historico", label: "Histórico", icon: <History className="size-4" />, exact: false },
+  ] as const;
   return (
     <aside className="hidden w-[220px] shrink-0 flex-col border-r border-border bg-background md:flex">
       <div className="p-6 pb-4">
-        <h1 className="font-display text-2xl font-extrabold tracking-tight text-ember">
-          KIAH
-        </h1>
-        <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-          Segundo cérebro
-        </p>
+        <Link to="/" className="block">
+          <h1 className="font-display text-2xl font-extrabold tracking-tight text-ember">
+            KIAH
+          </h1>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            Segundo cérebro
+          </p>
+        </Link>
       </div>
 
       <nav className="flex-1 space-y-1 px-3">
         {itens.map((it) => (
-          <button
+          <Link
             key={it.label}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-              it.ativo
-                ? "border border-border/60 bg-surface text-ember"
-                : "text-muted-foreground hover:bg-surface hover:text-foreground"
-            }`}
+            to={it.to}
+            activeOptions={{ exact: it.exact }}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground data-[status=active]:border data-[status=active]:border-border/60 data-[status=active]:bg-surface data-[status=active]:text-ember"
           >
             {it.icon}
             <span className="font-medium">{it.label}</span>
-          </button>
+          </Link>
         ))}
       </nav>
 
       <div className="border-t border-border p-4">
-        <div className="flex items-center gap-3 px-2 text-sm text-muted-foreground">
+        <Link
+          to="/perfil"
+          className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground data-[status=active]:text-ember"
+        >
           <div className="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-surface">
             <User className="size-4" />
           </div>
           <span className="truncate">Perfil</span>
-        </div>
+        </Link>
       </div>
     </aside>
+  );
+}
+
+/* Seleciona a tarefa que merece foco AGORA:
+   - vencida (prazo < agora) OU com prazo até o fim de hoje → escolhe a mais urgente
+   - se não houver nada nessa janela e existir tarefa urgente sem prazo → assume
+   - caso contrário, nada. A lista completa continua em "A seguir" / Agenda. */
+function escolherFoco(tarefas: Tarefa[]): Tarefa | undefined {
+  const agora = new Date();
+  const fimHoje = new Date(agora);
+  fimHoje.setHours(23, 59, 59, 999);
+
+  const noRadar = tarefas
+    .filter((t) => t.prazo_estimado && new Date(t.prazo_estimado) <= fimHoje)
+    .sort(
+      (a, b) =>
+        new Date(a.prazo_estimado!).getTime() -
+        new Date(b.prazo_estimado!).getTime(),
+    );
+  if (noRadar[0]) return noRadar[0];
+
+  return tarefas.find(
+    (t) => !t.prazo_estimado && t.tipo_demanda === "tarefa_urgente",
   );
 }
 
