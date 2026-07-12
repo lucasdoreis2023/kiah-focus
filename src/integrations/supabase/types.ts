@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      itens_lista: {
+        Row: {
+          categoria: string
+          comprado: boolean
+          comprado_em: string | null
+          created_at: string
+          descricao: string
+          id: string
+          origem: Database["public"]["Enums"]["origem_demanda"]
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string
+          comprado?: boolean
+          comprado_em?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          origem?: Database["public"]["Enums"]["origem_demanda"]
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string
+          comprado?: boolean
+          comprado_em?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          origem?: Database["public"]["Enums"]["origem_demanda"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tarefas: {
+        Row: {
+          adiamentos: number
+          cadencia_alerta_minutos: number
+          concluida_em: string | null
+          contexto: Json | null
+          created_at: string
+          descricao_limpa: string
+          id: string
+          origem: Database["public"]["Enums"]["origem_demanda"]
+          prazo_estimado: string | null
+          status: Database["public"]["Enums"]["status_demanda"]
+          tipo_demanda: Database["public"]["Enums"]["tipo_demanda"]
+          ultimo_alerta_em: string | null
+          updated_at: string
+        }
+        Insert: {
+          adiamentos?: number
+          cadencia_alerta_minutos?: number
+          concluida_em?: string | null
+          contexto?: Json | null
+          created_at?: string
+          descricao_limpa: string
+          id?: string
+          origem?: Database["public"]["Enums"]["origem_demanda"]
+          prazo_estimado?: string | null
+          status?: Database["public"]["Enums"]["status_demanda"]
+          tipo_demanda?: Database["public"]["Enums"]["tipo_demanda"]
+          ultimo_alerta_em?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adiamentos?: number
+          cadencia_alerta_minutos?: number
+          concluida_em?: string | null
+          contexto?: Json | null
+          created_at?: string
+          descricao_limpa?: string
+          id?: string
+          origem?: Database["public"]["Enums"]["origem_demanda"]
+          prazo_estimado?: string | null
+          status?: Database["public"]["Enums"]["status_demanda"]
+          tipo_demanda?: Database["public"]["Enums"]["tipo_demanda"]
+          ultimo_alerta_em?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +103,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      origem_demanda:
+        | "whatsapp_pessoal"
+        | "whatsapp_terceiros"
+        | "konecta_i"
+        | "manual"
+      status_demanda: "pendente" | "concluida" | "adiada" | "descartada"
+      tipo_demanda:
+        | "tarefa_urgente"
+        | "tarefa_rotina"
+        | "lista_compras"
+        | "academico"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +240,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      origem_demanda: [
+        "whatsapp_pessoal",
+        "whatsapp_terceiros",
+        "konecta_i",
+        "manual",
+      ],
+      status_demanda: ["pendente", "concluida", "adiada", "descartada"],
+      tipo_demanda: [
+        "tarefa_urgente",
+        "tarefa_rotina",
+        "lista_compras",
+        "academico",
+      ],
+    },
   },
 } as const
