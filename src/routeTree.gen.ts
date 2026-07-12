@@ -9,12 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ApiPublicEvolutionWebhookRouteImport } from './routes/api/public/evolution-webhook'
 import { Route as ApiPublicAlertasPersistentesRouteImport } from './routes/api/public/alertas-persistentes'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/_authenticated/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
@@ -32,18 +32,18 @@ const ApiPublicAlertasPersistentesRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/api/public/alertas-persistentes': typeof ApiPublicAlertasPersistentesRoute
   '/api/public/evolution-webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/api/public/alertas-persistentes': typeof ApiPublicAlertasPersistentesRoute
   '/api/public/evolution-webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/alertas-persistentes': typeof ApiPublicAlertasPersistentesRoute
   '/api/public/evolution-webhook': typeof ApiPublicEvolutionWebhookRoute
 }
@@ -57,24 +57,24 @@ export interface FileRouteTypes {
   to: '/' | '/api/public/alertas-persistentes' | '/api/public/evolution-webhook'
   id:
     | '__root__'
-    | '/'
+    | '/_authenticated/'
     | '/api/public/alertas-persistentes'
     | '/api/public/evolution-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   ApiPublicAlertasPersistentesRoute: typeof ApiPublicAlertasPersistentesRoute
   ApiPublicEvolutionWebhookRoute: typeof ApiPublicEvolutionWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/evolution-webhook': {
@@ -95,7 +95,7 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   ApiPublicAlertasPersistentesRoute: ApiPublicAlertasPersistentesRoute,
   ApiPublicEvolutionWebhookRoute: ApiPublicEvolutionWebhookRoute,
 }
