@@ -65,6 +65,28 @@ export const Route = createFileRoute("/_authenticated/")({
   component: PainelKiah,
 });
 
+function BotaoSair() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  async function sair() {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+  return (
+    <button
+      onClick={sair}
+      className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-sm text-muted-foreground hover:bg-surface-2"
+      aria-label="Sair"
+      title="Sair"
+    >
+      <LogOut className="size-4" />
+    </button>
+  );
+}
+
+
 function PainelKiah() {
   const qc = useQueryClient();
   const { data: tarefas } = useSuspenseQuery(tarefasPendentesQuery);
