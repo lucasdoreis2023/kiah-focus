@@ -41,10 +41,8 @@ type TriagemResultado = {
   itens_compra: ItemCompra[];
 };
 
-function construirPromptSistema(): string {
-  // Import dinâmico só quando executando no server (evita bundle client).
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { agoraBRTHumano } = require("./kiah-datas.server") as typeof import("./kiah-datas.server");
+async function construirPromptSistema(): Promise<string> {
+  const { agoraBRTHumano } = await import("./kiah-datas.server");
   return `Você é o núcleo de triagem do Kiah, um Segundo Cérebro para um usuário
 (Lucas) com TDAH severo e memória de curto prazo vulnerável. Cada mensagem
 chega crua — texto, transcrição de áudio, ou descrição de foto.
@@ -83,15 +81,12 @@ Responda APENAS com JSON válido, sem markdown, sem \`\`\`json:
 }`;
 }
 
-function agora() {
-  return new Date().toISOString();
-}
-
 async function chamarGemini(
   apiKey: string,
   partesUsuario: Array<Record<string, unknown>>,
   modelo: string,
 ): Promise<TriagemResultado> {
+  const systemPrompt = await construirPromptSistema();
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -101,7 +96,7 @@ async function chamarGemini(
     body: JSON.stringify({
       model: modelo,
       messages: [
-        { role: "system", content: construirPromptSistema() },
+        { role: "system", content: systemPrompt },
         { role: "user", content: partesUsuario },
       ],
       response_format: { type: "json_object" },
