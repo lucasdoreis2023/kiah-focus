@@ -458,10 +458,10 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           }
         } catch (e) {
           console.error("[kiah-webhook] erro baixando mídia", e);
-          await enviarWhatsApp(
+          await responderDono(
             "⚠️ Kiah recebeu sua mídia mas não consegui baixar. Tenta reenviar como texto?",
-            numeroResposta,
-          ).catch(() => {});
+          );
+
           return json({ ok: false, error: "download_midia_falhou" }, 200);
         }
 
