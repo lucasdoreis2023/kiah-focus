@@ -275,22 +275,41 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const numeroRemetente = jidParaNumero(jid);
         console.log("[kiah-webhook] numeroRemetente=", numeroRemetente);
 
-        // Resolver dono pelo perfil vinculado
-        const { data: dono } = await supabaseAdmin
-          .from("profiles")
-          .select("id")
-          .eq("whatsapp_numero", numeroRemetente)
-          .limit(1)
-          .maybeSingle();
-
-        if (!dono?.id) {
-          console.log("[kiah-webhook] IGNORADO remetente sem perfil vinculado:", numeroRemetente, "fromMe=", fromMe);
+        // Resolver dono: 1º tenta o número do remetente (self-chat).
+        // Se não achar, cai pro dono da INSTÂNCIA (KIAH_WHATSAPP_NUMERO) —
+        // assim mensagens vindas de outros números caem na caixa do dono do Kiah.
+        let userId: string | null = null;
+        {
+          const { data: donoRem } = await supabaseAdmin
+            .from("profiles")
+            .select("id")
+            .eq("whatsapp_numero", numeroRemetente)
+            .limit(1)
+            .maybeSingle();
+          if (donoRem?.id) userId = donoRem.id;
+        }
+        if (!userId) {
+          const numeroInstancia = (process.env.KIAH_WHATSAPP_NUMERO ?? "").replace(/\D/g, "");
+          if (numeroInstancia) {
+            const { data: donoInst } = await supabaseAdmin
+              .from("profiles")
+              .select("id")
+              .eq("whatsapp_numero", numeroInstancia)
+              .limit(1)
+              .maybeSingle();
+            if (donoInst?.id) {
+              userId = donoInst.id;
+              console.log("[kiah-webhook] roteado p/ dono da instância", numeroInstancia, "(remetente externo", numeroRemetente, ")");
+            }
+          }
+        }
+        if (!userId) {
+          console.log("[kiah-webhook] IGNORADO sem dono resolvível. remetente=", numeroRemetente, "fromMe=", fromMe);
           return json({
             ok: true,
-            ignorado: `remetente ${numeroRemetente} não vinculado (fromMe=${fromMe})`,
+            ignorado: `sem dono para remetente ${numeroRemetente} (fromMe=${fromMe})`,
           });
         }
-        const userId = dono.id;
 
         // Anti-loop: se fromMe=true e o texto começa com marcadores do próprio
         // Kiah (as confirmações que ele envia), ignora pra não triar o próprio eco.
