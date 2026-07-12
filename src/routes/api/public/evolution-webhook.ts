@@ -355,7 +355,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         if (texto && !temImagem && !temAudio) {
           const cmd = await tentarComando(texto, userId);
           if (cmd.tratado) {
-            await enviarWhatsApp(cmd.resposta ?? "✅ Ok.", numeroRemetente).catch(() => {});
+            await enviarWhatsApp(cmd.resposta ?? "✅ Ok.", numeroResposta).catch(() => {});
             return json({ ok: true, comando: true });
           }
         }
