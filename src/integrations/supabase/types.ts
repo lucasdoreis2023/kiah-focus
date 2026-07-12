@@ -21,8 +21,11 @@ export type Database = {
           comprado_em: string | null
           created_at: string
           descricao: string
+          expira_em: string | null
           id: string
           origem: Database["public"]["Enums"]["origem_demanda"]
+          origem_grupo_jid: string | null
+          origem_grupo_nome: string | null
           updated_at: string
           user_id: string | null
         }
@@ -32,8 +35,11 @@ export type Database = {
           comprado_em?: string | null
           created_at?: string
           descricao: string
+          expira_em?: string | null
           id?: string
           origem?: Database["public"]["Enums"]["origem_demanda"]
+          origem_grupo_jid?: string | null
+          origem_grupo_nome?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -43,8 +49,11 @@ export type Database = {
           comprado_em?: string | null
           created_at?: string
           descricao?: string
+          expira_em?: string | null
           id?: string
           origem?: Database["public"]["Enums"]["origem_demanda"]
+          origem_grupo_jid?: string | null
+          origem_grupo_nome?: string | null
           updated_at?: string
           user_id?: string | null
         }
