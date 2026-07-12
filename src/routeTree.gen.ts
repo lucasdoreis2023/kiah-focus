@@ -10,33 +10,62 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicEvolutionWebhookRouteImport } from './routes/api/public/evolution-webhook'
+import { Route as ApiPublicAlertasPersistentesRouteImport } from './routes/api/public/alertas-persistentes'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicEvolutionWebhookRoute =
+  ApiPublicEvolutionWebhookRouteImport.update({
+    id: '/api/public/evolution-webhook',
+    path: '/api/public/evolution-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicAlertasPersistentesRoute =
+  ApiPublicAlertasPersistentesRouteImport.update({
+    id: '/api/public/alertas-persistentes',
+    path: '/api/public/alertas-persistentes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/public/alertas-persistentes': typeof ApiPublicAlertasPersistentesRoute
+  '/api/public/evolution-webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/public/alertas-persistentes': typeof ApiPublicAlertasPersistentesRoute
+  '/api/public/evolution-webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/public/alertas-persistentes': typeof ApiPublicAlertasPersistentesRoute
+  '/api/public/evolution-webhook': typeof ApiPublicEvolutionWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api/public/alertas-persistentes'
+    | '/api/public/evolution-webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/api/public/alertas-persistentes' | '/api/public/evolution-webhook'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/public/alertas-persistentes'
+    | '/api/public/evolution-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiPublicAlertasPersistentesRoute: typeof ApiPublicAlertasPersistentesRoute
+  ApiPublicEvolutionWebhookRoute: typeof ApiPublicEvolutionWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +77,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/evolution-webhook': {
+      id: '/api/public/evolution-webhook'
+      path: '/api/public/evolution-webhook'
+      fullPath: '/api/public/evolution-webhook'
+      preLoaderRoute: typeof ApiPublicEvolutionWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/alertas-persistentes': {
+      id: '/api/public/alertas-persistentes'
+      path: '/api/public/alertas-persistentes'
+      fullPath: '/api/public/alertas-persistentes'
+      preLoaderRoute: typeof ApiPublicAlertasPersistentesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiPublicAlertasPersistentesRoute: ApiPublicAlertasPersistentesRoute,
+  ApiPublicEvolutionWebhookRoute: ApiPublicEvolutionWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
