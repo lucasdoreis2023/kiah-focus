@@ -1,16 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   Clock,
+  Image as ImageIcon,
+  Loader2,
+  Mic,
   Plus,
+  Sparkles,
   ShoppingBasket,
   Trash2,
   Zap,
   X,
   AlertTriangle,
 } from "lucide-react";
+
+import { triarMensagem } from "@/lib/kiah-triagem.functions";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
