@@ -106,6 +106,7 @@ function PainelKiah() {
           <h1 className="mt-1 text-3xl font-semibold">Kiah</h1>
         </div>
         <div className="flex gap-2">
+          <TriagemBotao />
           <NovaTarefaBotao />
           <NovoItemBotao />
         </div>
