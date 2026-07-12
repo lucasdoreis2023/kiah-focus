@@ -91,6 +91,23 @@ function PainelKiah() {
   const qc = useQueryClient();
   const { data: tarefas } = useSuspenseQuery(tarefasPendentesQuery);
   const { data: itens } = useSuspenseQuery(itensListaQuery);
+  const reivindicar = useServerFn(reivindicarDadosOrfaos);
+
+  // Primeira carga após login: adotar tarefas/itens sem dono e vincular WhatsApp.
+  useEffect(() => {
+    const flag = "kiah_reivindicado_v1";
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(flag)) return;
+    reivindicar({ data: {} })
+      .then((r) => {
+        sessionStorage.setItem(flag, "1");
+        if (r && (r.tarefas_migradas > 0 || r.itens_migrados > 0)) {
+          qc.invalidateQueries({ queryKey: ["tarefas"] });
+          qc.invalidateQueries({ queryKey: ["itens_lista"] });
+        }
+      })
+      .catch((e) => console.error("[kiah] reivindicar falhou", e));
+  }, [reivindicar, qc]);
 
   // Realtime — mantém o painel sincronizado com WhatsApp/Konecta-i quando plugarmos.
   useEffect(() => {
@@ -111,6 +128,7 @@ function PainelKiah() {
       supabase.removeChannel(canal);
     };
   }, [qc]);
+
 
   const [agora, ...restante] = tarefas;
   const aSeguir = restante.slice(0, 2);
