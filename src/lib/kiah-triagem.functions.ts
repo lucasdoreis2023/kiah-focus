@@ -168,7 +168,6 @@ export const triarMensagem = createServerFn({ method: "POST" })
         descricao: it.descricao,
         categoria: it.categoria || "Outros",
         origem: data.origem,
-        criado_em: agora(),
       }));
       const { error } = await supabaseAdmin.from("itens_lista").insert(linhas);
       if (error) throw new Error(`Falha inserindo itens: ${error.message}`);
