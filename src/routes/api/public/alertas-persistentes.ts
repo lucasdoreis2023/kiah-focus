@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 /**
- * Cron endpoint — chamado pelo pg_cron em intervalos curtos (ex: a cada 5 min).
- * Varre `tarefas` pendentes e, respeitando cadencia_alerta_minutos, dispara
- * mensagens persistentes no WhatsApp do Lucas.
+ * Cron endpoint — chamado pelo pg_cron a cada 5 min.
+ * Para cada tarefa pendente cuja cadência venceu, manda alerta no WhatsApp
+ * do dono (profiles.whatsapp_numero).
  */
 
 const CORS = {
@@ -29,24 +29,42 @@ export const Route = createFileRoute("/api/public/alertas-persistentes")({
         const { enviarWhatsApp } = await import("@/lib/kiah-whatsapp.server");
 
         const agora = new Date();
+
         const { data: tarefas, error } = await supabaseAdmin
           .from("tarefas")
           .select("*")
           .eq("status", "pendente")
-          .order("prazo_estimado", { ascending: true, nullsFirst: false });
-
+          .not("user_id", "is", null);
         if (error) return json({ ok: false, error: error.message }, 500);
+
+        // Carregar donos → número de WhatsApp
+        const userIds = [...new Set((tarefas ?? []).map((t) => t.user_id!))];
+        const numeroPorUsuario = new Map<string, string>();
+        if (userIds.length) {
+          const { data: perfis } = await supabaseAdmin
+            .from("profiles")
+            .select("id, whatsapp_numero")
+            .in("id", userIds);
+          for (const p of perfis ?? []) {
+            if (p.whatsapp_numero) numeroPorUsuario.set(p.id, p.whatsapp_numero);
+          }
+        }
 
         let enviados = 0;
         const detalhes: Array<{ id: string; motivo: string }> = [];
 
         for (const t of tarefas ?? []) {
+          const numero = numeroPorUsuario.get(t.user_id!);
+          if (!numero) {
+            detalhes.push({ id: t.id, motivo: "sem_whatsapp_vinculado" });
+            continue;
+          }
+
           const cadenciaMin = t.cadencia_alerta_minutos ?? 60;
           const ultimo = t.ultimo_alerta_em ? new Date(t.ultimo_alerta_em) : null;
           const minutosDesde = ultimo
             ? (agora.getTime() - ultimo.getTime()) / 60000
             : Infinity;
-
           if (minutosDesde < cadenciaMin) continue;
 
           const prazoTxt = t.prazo_estimado
@@ -68,7 +86,8 @@ export const Route = createFileRoute("/api/public/alertas-persistentes")({
 
           try {
             await enviarWhatsApp(
-              `${prefixo}: ${t.descricao_limpa}\n⏰ Prazo: ${prazoTxt}${adiSuf}\n\nResponda "feito ${t.id.slice(0, 6)}" ao concluir.`,
+              `${prefixo}: ${t.descricao_limpa}\n⏰ Prazo: ${prazoTxt}${adiSuf}\n\nResponda "feito ${t.id.slice(0, 6)}" ao concluir · "adiar ${t.id.slice(0, 6)} 30" · "desisto ${t.id.slice(0, 6)}"`,
+              numero,
             );
             await supabaseAdmin
               .from("tarefas")

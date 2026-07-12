@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -7,6 +7,7 @@ import {
   Clock,
   Image as ImageIcon,
   Loader2,
+  LogOut,
   Mic,
   Plus,
   Sparkles,
@@ -18,6 +19,8 @@ import {
 } from "lucide-react";
 
 import { triarMensagem } from "@/lib/kiah-triagem.functions";
+import { reivindicarDadosOrfaos } from "@/lib/kiah-auth.functions";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -38,7 +41,7 @@ import {
   type TipoDemanda,
 } from "@/lib/kiah-types";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Kiah — Segundo Cérebro" },
@@ -62,10 +65,49 @@ export const Route = createFileRoute("/")({
   component: PainelKiah,
 });
 
+function BotaoSair() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  async function sair() {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+  return (
+    <button
+      onClick={sair}
+      className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-sm text-muted-foreground hover:bg-surface-2"
+      aria-label="Sair"
+      title="Sair"
+    >
+      <LogOut className="size-4" />
+    </button>
+  );
+}
+
+
 function PainelKiah() {
   const qc = useQueryClient();
   const { data: tarefas } = useSuspenseQuery(tarefasPendentesQuery);
   const { data: itens } = useSuspenseQuery(itensListaQuery);
+  const reivindicar = useServerFn(reivindicarDadosOrfaos);
+
+  // Primeira carga após login: adotar tarefas/itens sem dono e vincular WhatsApp.
+  useEffect(() => {
+    const flag = "kiah_reivindicado_v1";
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(flag)) return;
+    reivindicar({ data: {} })
+      .then((r) => {
+        sessionStorage.setItem(flag, "1");
+        if (r && (r.tarefas_migradas > 0 || r.itens_migrados > 0)) {
+          qc.invalidateQueries({ queryKey: ["tarefas"] });
+          qc.invalidateQueries({ queryKey: ["itens_lista"] });
+        }
+      })
+      .catch((e) => console.error("[kiah] reivindicar falhou", e));
+  }, [reivindicar, qc]);
 
   // Realtime — mantém o painel sincronizado com WhatsApp/Konecta-i quando plugarmos.
   useEffect(() => {
@@ -86,6 +128,7 @@ function PainelKiah() {
       supabase.removeChannel(canal);
     };
   }, [qc]);
+
 
   const [agora, ...restante] = tarefas;
   const aSeguir = restante.slice(0, 2);
@@ -109,7 +152,9 @@ function PainelKiah() {
           <TriagemBotao />
           <NovaTarefaBotao />
           <NovoItemBotao />
+          <BotaoSair />
         </div>
+
       </header>
 
       <main className="mx-auto max-w-5xl px-6 pb-24 space-y-10">

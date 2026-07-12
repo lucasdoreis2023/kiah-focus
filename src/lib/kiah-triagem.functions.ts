@@ -18,11 +18,13 @@ const InputSchema = z.object({
   origem: z
     .enum(["manual", "whatsapp_pessoal", "whatsapp_terceiros", "konecta_i"])
     .default("manual"),
-  imagem_base64: z.string().optional(), // data URL completo OU raw base64
-  imagem_mime: z.string().optional(),   // ex: "image/jpeg"
-  audio_base64: z.string().optional(),  // raw base64
+  imagem_base64: z.string().optional(),
+  imagem_mime: z.string().optional(),
+  audio_base64: z.string().optional(),
   audio_format: z.enum(["webm", "mp3", "wav", "m4a", "ogg", "aac", "flac"]).optional(),
+  user_id: z.string().uuid().optional(),
 });
+
 
 type TriagemResultado = {
   classe: "tarefa_urgente" | "tarefa_rotina" | "academico" | "lista_compras" | "ruido";
@@ -168,6 +170,7 @@ export const triarMensagem = createServerFn({ method: "POST" })
         descricao: it.descricao,
         categoria: it.categoria || "Outros",
         origem: data.origem,
+        user_id: data.user_id ?? null,
       }));
       const { error } = await supabaseAdmin.from("itens_lista").insert(linhas);
       if (error) throw new Error(`Falha inserindo itens: ${error.message}`);
@@ -184,8 +187,10 @@ export const triarMensagem = createServerFn({ method: "POST" })
       prazo_estimado: resultado.prazo_iso,
       cadencia_alerta_minutos: cadencia,
       origem: data.origem,
+      user_id: data.user_id ?? null,
     });
     if (error) throw new Error(`Falha inserindo tarefa: ${error.message}`);
+
 
     return { ok: true, classe: resultado.classe, resultado, criados: 1 };
   });

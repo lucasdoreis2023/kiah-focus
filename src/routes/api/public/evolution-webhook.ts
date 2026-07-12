@@ -2,11 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 
 /**
  * Webhook público da Evolution API.
- * Configurar na Evolution para POST em:
+ * URL a configurar na Evolution:
  *   https://<host>/api/public/evolution-webhook
  *
- * Aceita eventos MESSAGES_UPSERT e triaga apenas as mensagens
- * cujo remetente é o número do Lucas (KIAH_WHATSAPP_NUMERO).
+ * Fluxo:
+ *  1. Aceita apenas MESSAGES_UPSERT.
+ *  2. Resolve o dono da mensagem via profiles.whatsapp_numero → user_id.
+ *     Se ninguém do sistema tiver esse número vinculado, ignora silenciosamente.
+ *  3. Se o texto é um COMANDO ("feito abc123", "adiar abc123 30",
+ *     "desisto abc123", "comprei café"), executa direto no banco.
+ *  4. Senão, dispara triagem por IA e grava sob o user_id resolvido.
  */
 
 const CORS = {
@@ -33,6 +38,108 @@ type EvolutionPayload = {
   };
 };
 
+/** Reconhece e executa comandos curtos vindos do WhatsApp. */
+async function tentarComando(
+  texto: string,
+  userId: string,
+): Promise<{ tratado: boolean; resposta?: string }> {
+  const t = texto.trim().toLowerCase();
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // feito XXXXXX
+  let m = t.match(/^feito\s+([a-f0-9]{4,12})\s*$/i);
+  if (m) {
+    const prefixo = m[1];
+    const { data, error } = await supabaseAdmin
+      .from("tarefas")
+      .update({ status: "concluida", concluida_em: new Date().toISOString() })
+      .like("id", `${prefixo}%`)
+      .eq("user_id", userId)
+      .eq("status", "pendente")
+      .select("descricao_limpa");
+    if (error) return { tratado: true, resposta: `⚠️ Erro: ${error.message}` };
+    if (!data || data.length === 0)
+      return { tratado: true, resposta: `🤔 Nenhuma tarefa pendente com id "${prefixo}".` };
+    return {
+      tratado: true,
+      resposta: `✅ Concluído: ${data.map((d) => d.descricao_limpa).join(" · ")}`,
+    };
+  }
+
+  // adiar XXXXXX N
+  m = t.match(/^adiar\s+([a-f0-9]{4,12})\s+(\d{1,4})\s*$/i);
+  if (m) {
+    const prefixo = m[1];
+    const minutos = parseInt(m[2], 10);
+    const { data: existente } = await supabaseAdmin
+      .from("tarefas")
+      .select("id, adiamentos, descricao_limpa")
+      .like("id", `${prefixo}%`)
+      .eq("user_id", userId)
+      .eq("status", "pendente")
+      .limit(1)
+      .maybeSingle();
+    if (!existente)
+      return { tratado: true, resposta: `🤔 Nenhuma tarefa pendente com id "${prefixo}".` };
+    const novoPrazo = new Date(Date.now() + minutos * 60_000).toISOString();
+    await supabaseAdmin
+      .from("tarefas")
+      .update({
+        prazo_estimado: novoPrazo,
+        adiamentos: (existente.adiamentos ?? 0) + 1,
+        ultimo_alerta_em: new Date().toISOString(),
+      })
+      .eq("id", existente.id);
+    return {
+      tratado: true,
+      resposta: `⏳ Adiada +${minutos}min: ${existente.descricao_limpa}`,
+    };
+  }
+
+  // desisto XXXXXX
+  m = t.match(/^desisto\s+([a-f0-9]{4,12})\s*$/i);
+  if (m) {
+    const prefixo = m[1];
+    const { data, error } = await supabaseAdmin
+      .from("tarefas")
+      .update({ status: "descartada" })
+      .like("id", `${prefixo}%`)
+      .eq("user_id", userId)
+      .eq("status", "pendente")
+      .select("descricao_limpa");
+    if (error) return { tratado: true, resposta: `⚠️ Erro: ${error.message}` };
+    if (!data || data.length === 0)
+      return { tratado: true, resposta: `🤔 Nada pendente com id "${prefixo}".` };
+    return {
+      tratado: true,
+      resposta: `🗑️ Descartada: ${data.map((d) => d.descricao_limpa).join(" · ")}`,
+    };
+  }
+
+  // comprei X (marca item por busca fuzzy)
+  m = texto.trim().match(/^(?:comprei|ja comprei|já comprei)\s+(.+)$/i);
+  if (m) {
+    const busca = m[1].trim();
+    const { data, error } = await supabaseAdmin
+      .from("itens_lista")
+      .update({ comprado: true, comprado_em: new Date().toISOString() })
+      .ilike("descricao", `%${busca}%`)
+      .eq("user_id", userId)
+      .eq("comprado", false)
+      .select("descricao");
+    if (error) return { tratado: true, resposta: `⚠️ Erro: ${error.message}` };
+    if (!data || data.length === 0)
+      return { tratado: true, resposta: `🛒 Não achei "${busca}" na lista.` };
+    return {
+      tratado: true,
+      resposta: `🛒 Comprado: ${data.map((d) => d.descricao).join(", ")}`,
+    };
+  }
+
+  return { tratado: false };
+}
+
 export const Route = createFileRoute("/api/public/evolution-webhook")({
   server: {
     handlers: {
@@ -49,7 +156,6 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         }
 
         const evento = payload.event ?? "";
-        // Só nos interessa mensagem nova
         if (!/messages[._-]upsert/i.test(evento)) {
           return json({ ok: true, ignorado: `evento ${evento}` });
         }
@@ -62,15 +168,27 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const { jidParaNumero, enviarWhatsApp, baixarMidiaBase64 } = await import(
           "@/lib/kiah-whatsapp.server"
         );
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         const numeroRemetente = jidParaNumero(jid);
-        const numeroLucas = process.env.KIAH_WHATSAPP_NUMERO ?? "";
-        if (numeroRemetente !== numeroLucas) {
-          return json({ ok: true, ignorado: `remetente ${numeroRemetente}` });
+
+        // Resolver dono pelo perfil (whatsapp_numero vinculado no 1º login)
+        const { data: dono } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("whatsapp_numero", numeroRemetente)
+          .limit(1)
+          .maybeSingle();
+
+        if (!dono?.id) {
+          return json({
+            ok: true,
+            ignorado: `remetente ${numeroRemetente} não vinculado a nenhum usuário`,
+          });
         }
+        const userId = dono.id;
 
         const msg = d?.message ?? {};
-        // Extrair texto direto
         let texto = "";
         if (typeof (msg as any).conversation === "string") {
           texto = (msg as any).conversation;
@@ -82,9 +200,17 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           texto = (msg as any).audioMessage.caption;
         }
 
-        // Detectar mídia
         const temImagem = !!(msg as any).imageMessage;
         const temAudio = !!(msg as any).audioMessage;
+
+        // Se é texto puro, tentar comando primeiro
+        if (texto && !temImagem && !temAudio) {
+          const cmd = await tentarComando(texto, userId);
+          if (cmd.tratado) {
+            await enviarWhatsApp(cmd.resposta ?? "✅ Ok.", numeroRemetente).catch(() => {});
+            return json({ ok: true, comando: true });
+          }
+        }
 
         let imagem_base64: string | undefined;
         let imagem_mime: string | undefined;
@@ -94,11 +220,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         try {
           if (temImagem || temAudio) {
             const mid = await baixarMidiaBase64({
-              key: {
-                remoteJid: jid,
-                id: d?.key?.id ?? "",
-                fromMe: false,
-              },
+              key: { remoteJid: jid, id: d?.key?.id ?? "", fromMe: false },
               message: msg,
             });
             if (temImagem) {
@@ -106,20 +228,23 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
               imagem_mime = mid.mimetype || "image/jpeg";
             } else if (temAudio) {
               audio_base64 = mid.base64;
-              // WhatsApp geralmente ogg/opus
               const mt = (mid.mimetype || "").toLowerCase();
-              audio_format =
-                mt.includes("mp3") ? "mp3"
-                : mt.includes("wav") ? "wav"
-                : mt.includes("m4a") || mt.includes("mp4") ? "m4a"
-                : mt.includes("webm") ? "webm"
-                : "ogg";
+              audio_format = mt.includes("mp3")
+                ? "mp3"
+                : mt.includes("wav")
+                  ? "wav"
+                  : mt.includes("m4a") || mt.includes("mp4")
+                    ? "m4a"
+                    : mt.includes("webm")
+                      ? "webm"
+                      : "ogg";
             }
           }
         } catch (e) {
           console.error("[kiah-webhook] erro baixando mídia", e);
           await enviarWhatsApp(
-            "⚠️ Kiah recebeu sua mídia mas não consegui baixar pela Evolution. Tenta reenviar como texto?",
+            "⚠️ Kiah recebeu sua mídia mas não consegui baixar. Tenta reenviar como texto?",
+            numeroRemetente,
           ).catch(() => {});
           return json({ ok: false, error: "download_midia_falhou" }, 200);
         }
@@ -138,10 +263,10 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
               imagem_mime,
               audio_base64,
               audio_format,
+              user_id: userId,
             },
           });
 
-          // Confirmação curta ao Lucas
           const resumo =
             res.classe === "ruido"
               ? "🫧 Recebi, mas nada acionável — arquivado como ruído."
@@ -153,7 +278,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
                     ? `📘 Tarefa acadêmica registrada: ${res.resultado.descricao_limpa}`
                     : `📝 Tarefa registrada: ${res.resultado.descricao_limpa}`;
 
-          await enviarWhatsApp(resumo).catch((e) =>
+          await enviarWhatsApp(resumo, numeroRemetente).catch((e) =>
             console.error("[kiah-webhook] envio confirmação falhou", e),
           );
 
@@ -163,6 +288,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           console.error("[kiah-webhook] triagem falhou", msgErr);
           await enviarWhatsApp(
             `⚠️ Kiah recebeu mas travou na triagem: ${msgErr.slice(0, 140)}`,
+            numeroRemetente,
           ).catch(() => {});
           return json({ ok: false, error: msgErr }, 200);
         }
