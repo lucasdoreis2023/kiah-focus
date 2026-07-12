@@ -18,11 +18,13 @@ const InputSchema = z.object({
   origem: z
     .enum(["manual", "whatsapp_pessoal", "whatsapp_terceiros", "konecta_i"])
     .default("manual"),
-  imagem_base64: z.string().optional(), // data URL completo OU raw base64
-  imagem_mime: z.string().optional(),   // ex: "image/jpeg"
-  audio_base64: z.string().optional(),  // raw base64
+  imagem_base64: z.string().optional(),
+  imagem_mime: z.string().optional(),
+  audio_base64: z.string().optional(),
   audio_format: z.enum(["webm", "mp3", "wav", "m4a", "ogg", "aac", "flac"]).optional(),
+  user_id: z.string().uuid().optional(),
 });
+
 
 type TriagemResultado = {
   classe: "tarefa_urgente" | "tarefa_rotina" | "academico" | "lista_compras" | "ruido";
