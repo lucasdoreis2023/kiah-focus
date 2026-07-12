@@ -352,9 +352,29 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           });
         }
 
+        // Blindagem: TODA resposta do Kiah só pode ir para o número cadastrado do dono.
+        // Se por qualquer motivo o destino não bater, silencia (nunca responde a terceiros).
+        const destinoAutorizado = normalizarNumeroCadastro(numeroResposta);
+        if (!destinoAutorizado || destinoAutorizado !== numeroCadastradoKiah) {
+          console.log(
+            "[kiah-webhook] IGNORADO destino de resposta não autorizado. destino=",
+            destinoAutorizado,
+            "cadastrado=",
+            numeroCadastradoKiah,
+          );
+          return json({ ok: true, ignorado: "destino_nao_autorizado" });
+        }
+        async function responderDono(texto: string) {
+          if (!texto) return;
+          try {
+            console.log("[kiah-webhook] respondendo dono destino=", destinoAutorizado);
+            await enviarWhatsApp(texto, destinoAutorizado);
+          } catch (e) {
+            console.error("[kiah-webhook] envio falhou", e);
+          }
+        }
 
-        // Confirmação sempre volta para o número cadastrado que recebeu a tarefa,
-        // nunca para um contato externo/grupo não cadastrado.
+
 
 
         // Anti-loop: se fromMe=true e o texto começa com marcadores do próprio
@@ -388,10 +408,10 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
 
           if (error) {
             console.error("[kiah-webhook] erro salvando item temporário de grupo", error.message);
-            await enviarWhatsApp(
+            await responderDono(
               `⚠️ Kiah recebeu uma mensagem de grupo, mas não consegui arquivar: ${error.message.slice(0, 120)}`,
-              numeroResposta,
-            ).catch(() => {});
+            );
+
             return json({ ok: false, error: error.message }, 200);
           }
 
@@ -403,7 +423,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         if (remetenteEhNumeroCadastrado && texto && !temImagem && !temAudio) {
           const cmd = await tentarComando(texto, userId);
           if (cmd.tratado) {
-            await enviarWhatsApp(cmd.resposta ?? "✅ Ok.", numeroResposta).catch(() => {});
+            await responderDono(cmd.resposta ?? "✅ Ok.");
             return json({ ok: true, comando: true });
           }
         }
@@ -438,10 +458,10 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           }
         } catch (e) {
           console.error("[kiah-webhook] erro baixando mídia", e);
-          await enviarWhatsApp(
+          await responderDono(
             "⚠️ Kiah recebeu sua mídia mas não consegui baixar. Tenta reenviar como texto?",
-            numeroResposta,
-          ).catch(() => {});
+          );
+
           return json({ ok: false, error: "download_midia_falhou" }, 200);
         }
 
@@ -503,18 +523,16 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           }
           const resumo = partes.join("\n");
 
-          await enviarWhatsApp(resumo, numeroResposta).catch((e) =>
-            console.error("[kiah-webhook] envio confirmação falhou", e),
-          );
+          await responderDono(resumo);
 
           return json({ ...res, ok: true });
         } catch (e) {
           const msgErr = e instanceof Error ? e.message : String(e);
           console.error("[kiah-webhook] triagem falhou", msgErr);
-          await enviarWhatsApp(
+          await responderDono(
             `⚠️ Kiah recebeu mas travou na triagem: ${msgErr.slice(0, 140)}`,
-            numeroResposta,
-          ).catch(() => {});
+          );
+
           return json({ ok: false, error: msgErr }, 200);
         }
       },
