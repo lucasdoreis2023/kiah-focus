@@ -603,12 +603,10 @@ function TriagemBotao() {
           user_id,
         },
       });
-      if (res.classe === "ruido") {
+      if (res.ruido) {
         setFeedback("Kiah entendeu como ruído — nada acionável.");
       } else {
-        setFeedback(
-          `✓ ${res.criados} registro(s) criado(s) como "${res.classe}".`,
-        );
+        setFeedback(`✓ ${res.criados} registro(s) criado(s).`);
       }
       qc.invalidateQueries({ queryKey: ["tarefas"] });
       qc.invalidateQueries({ queryKey: ["itens_lista"] });
