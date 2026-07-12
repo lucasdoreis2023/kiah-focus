@@ -270,10 +270,14 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         );
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        // O número do "outro lado" da conversa. Se fromMe=true (a instância
+        // enviou), remoteJid é o destinatário. No cenário "Kiah roda no meu
+        // próprio WhatsApp / self-chat", esse destinatário É o próprio dono
+        // — então continuamos processando.
         const numeroRemetente = jidParaNumero(jid);
         console.log("[kiah-webhook] numeroRemetente=", numeroRemetente);
 
-        // Resolver dono pelo perfil (whatsapp_numero vinculado no 1º login)
+        // Resolver dono pelo perfil vinculado
         const { data: dono } = await supabaseAdmin
           .from("profiles")
           .select("id")
@@ -282,14 +286,28 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           .maybeSingle();
 
         if (!dono?.id) {
-          console.log("[kiah-webhook] IGNORADO remetente sem perfil vinculado:", numeroRemetente);
+          console.log("[kiah-webhook] IGNORADO remetente sem perfil vinculado:", numeroRemetente, "fromMe=", fromMe);
           return json({
             ok: true,
-            ignorado: `remetente ${numeroRemetente} não vinculado a nenhum usuário`,
+            ignorado: `remetente ${numeroRemetente} não vinculado (fromMe=${fromMe})`,
           });
         }
         const userId = dono.id;
-        console.log("[kiah-webhook] dono userId=", userId, "texto=", (d?.message as any)?.conversation ?? (d?.message as any)?.extendedTextMessage?.text ?? "(mídia)");
+
+        // Anti-loop: se fromMe=true e o texto começa com marcadores do próprio
+        // Kiah (as confirmações que ele envia), ignora pra não triar o próprio eco.
+        if (fromMe) {
+          const textoBruto =
+            (d?.message as any)?.conversation ??
+            (d?.message as any)?.extendedTextMessage?.text ??
+            "";
+          if (/^\s*(?:✅|🛒|📅|⏳|🔥|📘|📝|🗑️|🤔|🫧|⚠️|🤖|📭|✓)/.test(textoBruto)) {
+            console.log("[kiah-webhook] IGNORADO eco do próprio Kiah");
+            return json({ ok: true, ignorado: "eco_bot" });
+          }
+        }
+
+        console.log("[kiah-webhook] dono userId=", userId);
 
         const msg = d?.message ?? {};
         let texto = "";
