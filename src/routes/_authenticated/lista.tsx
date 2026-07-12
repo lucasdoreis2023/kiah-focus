@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Check, Trash2, ArrowLeft } from "lucide-react";
 import {
   itensListaQuery,
   marcarItemComprado,
   removerItemLista,
+  removerItensLista,
+  removerTodosItensLista,
 } from "@/lib/kiah-queries";
 
 export const Route = createFileRoute("/_authenticated/lista")({
@@ -22,11 +25,41 @@ export const Route = createFileRoute("/_authenticated/lista")({
 function ListaPage() {
   const { data: itens } = useSuspenseQuery(itensListaQuery);
   const qc = useQueryClient();
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+
+  const invalidar = () => qc.invalidateQueries({ queryKey: ["itens_lista"] });
 
   const porCategoria = itens.reduce<Record<string, typeof itens>>((acc, it) => {
     (acc[it.categoria] ??= []).push(it);
     return acc;
   }, {});
+
+  const toggle = (id: string) =>
+    setSelecionados((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+
+  const todosMarcados = itens.length > 0 && selecionados.size === itens.length;
+  const toggleTodos = () =>
+    setSelecionados(todosMarcados ? new Set() : new Set(itens.map((i) => i.id)));
+
+  const deletarSelecionados = async () => {
+    if (!selecionados.size) return;
+    if (!confirm(`Deletar ${selecionados.size} item(ns) selecionado(s)?`)) return;
+    await removerItensLista([...selecionados]);
+    setSelecionados(new Set());
+    invalidar();
+  };
+
+  const deletarTudo = async () => {
+    if (!itens.length) return;
+    if (!confirm(`Deletar TODOS os ${itens.length} itens da lista?`)) return;
+    await removerTodosItensLista();
+    setSelecionados(new Set());
+    invalidar();
+  };
 
   return (
     <div className="mx-auto max-w-3xl p-5 sm:p-8">
@@ -37,6 +70,37 @@ function ListaPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         {itens.length} item{itens.length === 1 ? "" : "s"} em aberto.
       </p>
+
+      {itens.length > 0 && (
+        <div className="mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface/40 px-4 py-3 text-sm">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={todosMarcados}
+              onChange={toggleTodos}
+              className="size-4 accent-ember"
+            />
+            <span className="text-muted-foreground">
+              {selecionados.size > 0 ? `${selecionados.size} selecionado(s)` : "Selecionar todos"}
+            </span>
+          </label>
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={deletarSelecionados}
+              disabled={!selecionados.size}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:border-destructive hover:text-destructive disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 className="size-3.5" /> Deletar selecionados
+            </button>
+            <button
+              onClick={deletarTudo}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Trash2 className="size-3.5" /> Deletar tudo
+            </button>
+          </div>
+        </div>
+      )}
 
       {itens.length === 0 ? (
         <p className="mt-8 rounded-xl border border-dashed border-border/60 bg-surface/30 px-5 py-10 text-center text-sm text-muted-foreground">
@@ -53,7 +117,13 @@ function ListaPage() {
                 {lista.map((item) => (
                   <li key={item.id} className="group flex items-center justify-between gap-3 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="size-4 shrink-0 rounded-sm border border-border" />
+                      <input
+                        type="checkbox"
+                        checked={selecionados.has(item.id)}
+                        onChange={() => toggle(item.id)}
+                        className="size-4 shrink-0 accent-ember"
+                        aria-label="Selecionar"
+                      />
                       <div className="min-w-0">
                         <span className="block truncate text-sm">{item.descricao}</span>
                         {item.expira_em && (
@@ -67,7 +137,7 @@ function ListaPage() {
                       <button
                         onClick={async () => {
                           await marcarItemComprado(item.id);
-                          qc.invalidateQueries({ queryKey: ["itens_lista"] });
+                          invalidar();
                         }}
                         className="rounded-md p-1.5 text-muted-foreground hover:bg-ember hover:text-ember-foreground"
                         aria-label="Comprei"
@@ -76,8 +146,14 @@ function ListaPage() {
                       </button>
                       <button
                         onClick={async () => {
+                          if (!confirm("Deletar este item?")) return;
                           await removerItemLista(item.id);
-                          qc.invalidateQueries({ queryKey: ["itens_lista"] });
+                          setSelecionados((prev) => {
+                            const n = new Set(prev);
+                            n.delete(item.id);
+                            return n;
+                          });
+                          invalidar();
                         }}
                         className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
                         aria-label="Remover"
