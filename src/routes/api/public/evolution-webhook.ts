@@ -250,14 +250,20 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         }
 
         const evento = payload.event ?? "";
+        console.log("[kiah-webhook] evento=", evento, "instance=", payload.instance);
         if (!/messages[._-]upsert/i.test(evento)) {
+          console.log("[kiah-webhook] IGNORADO evento não-upsert");
           return json({ ok: true, ignorado: `evento ${evento}` });
         }
 
         const d = payload.data;
         const jid = d?.key?.remoteJid ?? "";
         const fromMe = d?.key?.fromMe === true;
-        if (fromMe) return json({ ok: true, ignorado: "fromMe" });
+        console.log("[kiah-webhook] jid=", jid, "fromMe=", fromMe, "messageType=", d?.messageType, "pushName=", d?.pushName);
+        if (fromMe) {
+          console.log("[kiah-webhook] IGNORADO fromMe=true");
+          return json({ ok: true, ignorado: "fromMe" });
+        }
 
         const { jidParaNumero, enviarWhatsApp, baixarMidiaBase64 } = await import(
           "@/lib/kiah-whatsapp.server"
@@ -265,6 +271,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         const numeroRemetente = jidParaNumero(jid);
+        console.log("[kiah-webhook] numeroRemetente=", numeroRemetente);
 
         // Resolver dono pelo perfil (whatsapp_numero vinculado no 1º login)
         const { data: dono } = await supabaseAdmin
@@ -275,12 +282,14 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           .maybeSingle();
 
         if (!dono?.id) {
+          console.log("[kiah-webhook] IGNORADO remetente sem perfil vinculado:", numeroRemetente);
           return json({
             ok: true,
             ignorado: `remetente ${numeroRemetente} não vinculado a nenhum usuário`,
           });
         }
         const userId = dono.id;
+        console.log("[kiah-webhook] dono userId=", userId, "texto=", (d?.message as any)?.conversation ?? (d?.message as any)?.extendedTextMessage?.text ?? "(mídia)");
 
         const msg = d?.message ?? {};
         let texto = "";
