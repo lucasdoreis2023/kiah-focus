@@ -408,10 +408,10 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
 
           if (error) {
             console.error("[kiah-webhook] erro salvando item temporário de grupo", error.message);
-            await enviarWhatsApp(
+            await responderDono(
               `⚠️ Kiah recebeu uma mensagem de grupo, mas não consegui arquivar: ${error.message.slice(0, 120)}`,
-              numeroResposta,
-            ).catch(() => {});
+            );
+
             return json({ ok: false, error: error.message }, 200);
           }
 
