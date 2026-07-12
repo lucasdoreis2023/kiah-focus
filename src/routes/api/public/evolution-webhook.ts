@@ -523,18 +523,16 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           }
           const resumo = partes.join("\n");
 
-          await enviarWhatsApp(resumo, numeroResposta).catch((e) =>
-            console.error("[kiah-webhook] envio confirmação falhou", e),
-          );
+          await responderDono(resumo);
 
           return json({ ...res, ok: true });
         } catch (e) {
           const msgErr = e instanceof Error ? e.message : String(e);
           console.error("[kiah-webhook] triagem falhou", msgErr);
-          await enviarWhatsApp(
+          await responderDono(
             `⚠️ Kiah recebeu mas travou na triagem: ${msgErr.slice(0, 140)}`,
-            numeroResposta,
-          ).catch(() => {});
+          );
+
           return json({ ok: false, error: msgErr }, 200);
         }
       },
