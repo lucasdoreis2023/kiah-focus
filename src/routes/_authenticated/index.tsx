@@ -476,7 +476,10 @@ function SecaoLista({
   itensPorCategoria,
   total,
 }: {
-  itensPorCategoria: Record<string, Array<{ id: string; descricao: string; categoria: string }>>;
+  itensPorCategoria: Record<
+    string,
+    Array<{ id: string; descricao: string; categoria: string; expira_em?: string | null }>
+  >;
   total: number;
 }) {
   const qc = useQueryClient();
@@ -510,7 +513,14 @@ function SecaoLista({
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="size-4 shrink-0 rounded-sm border border-border" />
-                        <span className="truncate">{item.descricao}</span>
+                        <span className="min-w-0 truncate">
+                          {item.descricao}
+                          {item.expira_em && (
+                            <span className="ml-2 text-[11px] text-muted-foreground">
+                              expira {fmtExpiraItem(item.expira_em)}
+                            </span>
+                          )}
+                        </span>
                       </div>
                       <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                         <button
@@ -544,6 +554,15 @@ function SecaoLista({
       )}
     </section>
   );
+}
+
+function fmtExpiraItem(iso: string) {
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 /* ---------------- Ações do header ---------------- */

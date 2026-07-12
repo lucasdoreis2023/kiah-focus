@@ -54,7 +54,14 @@ function ListaPage() {
                   <li key={item.id} className="group flex items-center justify-between gap-3 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="size-4 shrink-0 rounded-sm border border-border" />
-                      <span className="truncate text-sm">{item.descricao}</span>
+                      <div className="min-w-0">
+                        <span className="block truncate text-sm">{item.descricao}</span>
+                        {item.expira_em && (
+                          <span className="block truncate text-[11px] text-muted-foreground">
+                            expira {fmtExpira(item.expira_em)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex shrink-0 gap-1">
                       <button
@@ -87,4 +94,13 @@ function ListaPage() {
       )}
     </div>
   );
+}
+
+function fmtExpira(iso: string) {
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

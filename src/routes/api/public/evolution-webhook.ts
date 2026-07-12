@@ -7,8 +7,8 @@ import { createFileRoute } from "@tanstack/react-router";
  *
  * Fluxo:
  *  1. Aceita apenas MESSAGES_UPSERT.
- *  2. Resolve o dono da mensagem via profiles.whatsapp_numero → user_id.
- *     Se ninguém do sistema tiver esse número vinculado, ignora silenciosamente.
+ *  2. Resolve o dono pelo número WhatsApp cadastrado que recebeu a mensagem.
+ *     Contato externo nunca recebe confirmação do Kiah.
  *  3. Se o texto é um COMANDO ("feito abc123", "adiar abc123 30",
  *     "desisto abc123", "comprei café"), executa direto no banco.
  *  4. Senão, dispara triagem por IA e grava sob o user_id resolvido.
@@ -31,12 +31,20 @@ type EvolutionPayload = {
   event?: string;
   instance?: string;
   data?: {
-    key?: { remoteJid?: string; fromMe?: boolean; id?: string };
+    key?: { remoteJid?: string; fromMe?: boolean; id?: string; participant?: string };
     message?: Record<string, unknown>;
     messageType?: string;
     pushName?: string;
+    participant?: string;
+    sender?: string;
   };
 };
+
+const CATEGORIA_GRUPO_BLOQUEADO = "Grupos bloqueados";
+
+function ehJidGrupo(jid: string): boolean {
+  return jid.endsWith("@g.us");
+}
 
 function normalizarNumeroCadastro(bruto: string): string {
   const digitos = (bruto ?? "").replace(/\D/g, "");
@@ -44,6 +52,27 @@ function normalizarNumeroCadastro(bruto: string): string {
   if (digitos.startsWith("55")) return digitos;
   if (digitos.length === 10 || digitos.length === 11) return `55${digitos}`;
   return digitos;
+}
+
+function extrairTextoMensagem(msg: Record<string, unknown>): string {
+  if (typeof (msg as any).conversation === "string") return (msg as any).conversation;
+  if (typeof (msg as any).extendedTextMessage?.text === "string") {
+    return (msg as any).extendedTextMessage.text;
+  }
+  if (typeof (msg as any).imageMessage?.caption === "string") return (msg as any).imageMessage.caption;
+  if (typeof (msg as any).audioMessage?.caption === "string") return (msg as any).audioMessage.caption;
+  if (typeof (msg as any).documentMessage?.caption === "string") return (msg as any).documentMessage.caption;
+  if (typeof (msg as any).documentMessage?.fileName === "string") return (msg as any).documentMessage.fileName;
+  if (typeof (msg as any).videoMessage?.caption === "string") return (msg as any).videoMessage.caption;
+  if (typeof (msg as any).locationMessage?.name === "string") return (msg as any).locationMessage.name;
+  if (typeof (msg as any).locationMessage?.address === "string") return (msg as any).locationMessage.address;
+  return "";
+}
+
+function resumoItemGrupo(texto: string, tipo?: string, grupo?: string): string {
+  const base = texto.trim() || tipo || "Mensagem de grupo";
+  const curto = base.replace(/\s+/g, " ").slice(0, 220);
+  return grupo ? `[${grupo}] ${curto}` : curto;
 }
 
 /** Reconhece e executa comandos curtos vindos do WhatsApp. */
@@ -283,34 +312,32 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const numeroRemetente = jidParaNumero(jid);
         console.log("[kiah-webhook] numeroRemetente=", numeroRemetente);
 
-        // Resolver dono:
-        // 1) Se o próprio remetente está cadastrado, a tarefa é dele e a resposta volta para ele.
-        // 2) Se é um contato externo escrevendo para o número Kiah cadastrado, grava na conta
-        //    desse número cadastrado e a confirmação volta SOMENTE para o número cadastrado.
-        // 3) Mensagens enviadas por mim para contatos externos (fromMe=true) não entram no fallback.
-        let userId: string | null = null;
-        let numeroResposta = "";
-        {
-          const { data: donoRem } = await supabaseAdmin
+        const msg = d?.message ?? {};
+        const texto = extrairTextoMensagem(msg);
+        const grupo = ehJidGrupo(jid);
+        const numeroCadastradoKiah = normalizarNumeroCadastro(numeroKiah());
+        const remetenteEhNumeroCadastrado = numeroRemetente === numeroCadastradoKiah;
+
+        async function perfilPorNumero(numero: string) {
+          const { data } = await supabaseAdmin
             .from("profiles")
             .select("id, whatsapp_numero")
-            .eq("whatsapp_numero", numeroRemetente)
+            .eq("whatsapp_numero", numero)
             .limit(1)
             .maybeSingle();
-          if (donoRem?.id) {
-            userId = donoRem.id;
-            numeroResposta = donoRem.whatsapp_numero ?? numeroRemetente;
-          }
+          return data;
         }
 
-        if (!userId && !fromMe) {
-          const numeroCadastradoKiah = normalizarNumeroCadastro(numeroKiah());
-          const { data: donoNumeroCadastrado } = await supabaseAdmin
-            .from("profiles")
-            .select("id, whatsapp_numero")
-            .eq("whatsapp_numero", numeroCadastradoKiah)
-            .limit(1)
-            .maybeSingle();
+        // Resolver dono:
+        // - Toda conversa direta recebida por esta instância entra no número cadastrado da instância.
+        // - Só o próprio número cadastrado pode comandar/receber como remetente direto.
+        // - Mensagens enviadas pela instância para contatos externos são ignoradas.
+        // - Grupos nunca recebem resposta; viram item temporário do número cadastrado da instância.
+        let userId: string | null = null;
+        let numeroResposta = "";
+
+        if (grupo || !fromMe || remetenteEhNumeroCadastrado) {
+          const donoNumeroCadastrado = await perfilPorNumero(numeroCadastradoKiah);
           if (donoNumeroCadastrado?.id) {
             userId = donoNumeroCadastrado.id;
             numeroResposta = donoNumeroCadastrado.whatsapp_numero ?? numeroCadastradoKiah;
@@ -327,17 +354,13 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
 
 
         // Confirmação sempre volta para o número cadastrado que recebeu a tarefa,
-        // nunca para um contato externo não cadastrado.
+        // nunca para um contato externo/grupo não cadastrado.
 
 
         // Anti-loop: se fromMe=true e o texto começa com marcadores do próprio
         // Kiah (as confirmações que ele envia), ignora pra não triar o próprio eco.
         if (fromMe) {
-          const textoBruto =
-            (d?.message as any)?.conversation ??
-            (d?.message as any)?.extendedTextMessage?.text ??
-            "";
-          if (/^\s*(?:✅|🛒|📅|⏳|🔥|📘|📝|🗑️|🤔|🫧|⚠️|🤖|📭|✓)/.test(textoBruto)) {
+          if (/^\s*(?:✅|🛒|📅|⏳|🔥|📘|📝|🗑️|🤔|🫧|⚠️|🤖|📭|✓)/.test(texto)) {
             console.log("[kiah-webhook] IGNORADO eco do próprio Kiah");
             return json({ ok: true, ignorado: "eco_bot" });
           }
@@ -345,23 +368,39 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
 
         console.log("[kiah-webhook] dono userId=", userId);
 
-        const msg = d?.message ?? {};
-        let texto = "";
-        if (typeof (msg as any).conversation === "string") {
-          texto = (msg as any).conversation;
-        } else if (typeof (msg as any).extendedTextMessage?.text === "string") {
-          texto = (msg as any).extendedTextMessage.text;
-        } else if (typeof (msg as any).imageMessage?.caption === "string") {
-          texto = (msg as any).imageMessage.caption;
-        } else if (typeof (msg as any).audioMessage?.caption === "string") {
-          texto = (msg as any).audioMessage.caption;
-        }
-
         const temImagem = !!(msg as any).imageMessage;
         const temAudio = !!(msg as any).audioMessage;
 
+        if (grupo) {
+          const expiraEm = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+          const grupoNome = d?.pushName || "Grupo WhatsApp";
+          const descricao = resumoItemGrupo(texto, d?.messageType, grupoNome);
+
+          const { error } = await supabaseAdmin.from("itens_lista").insert({
+            descricao,
+            categoria: CATEGORIA_GRUPO_BLOQUEADO,
+            origem: "whatsapp_terceiros",
+            user_id: userId,
+            expira_em: expiraEm,
+            origem_grupo_jid: jid,
+            origem_grupo_nome: grupoNome,
+          });
+
+          if (error) {
+            console.error("[kiah-webhook] erro salvando item temporário de grupo", error.message);
+            await enviarWhatsApp(
+              `⚠️ Kiah recebeu uma mensagem de grupo, mas não consegui arquivar: ${error.message.slice(0, 120)}`,
+              numeroResposta,
+            ).catch(() => {});
+            return json({ ok: false, error: error.message }, 200);
+          }
+
+          console.log("[kiah-webhook] grupo bloqueado arquivado temporariamente", jid);
+          return json({ ok: true, grupo_bloqueado: true, expira_em: expiraEm });
+        }
+
         // Se é texto puro, tentar comando primeiro
-        if (texto && !temImagem && !temAudio) {
+        if (remetenteEhNumeroCadastrado && texto && !temImagem && !temAudio) {
           const cmd = await tentarComando(texto, userId);
           if (cmd.tratado) {
             await enviarWhatsApp(cmd.resposta ?? "✅ Ok.", numeroResposta).catch(() => {});
