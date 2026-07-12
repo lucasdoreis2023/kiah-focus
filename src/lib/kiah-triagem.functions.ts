@@ -41,9 +41,18 @@ type TriagemResultado = {
   itens_compra: ItemCompra[];
 };
 
-const PROMPT_SISTEMA = `Você é o núcleo de triagem do Kiah, um Segundo Cérebro para um usuário
+async function construirPromptSistema(): Promise<string> {
+  const { agoraBRTHumano } = await import("./kiah-datas.server");
+  return `Você é o núcleo de triagem do Kiah, um Segundo Cérebro para um usuário
 (Lucas) com TDAH severo e memória de curto prazo vulnerável. Cada mensagem
 chega crua — texto, transcrição de áudio, ou descrição de foto.
+
+AGORA (America/Sao_Paulo, UTC-3): ${agoraBRTHumano()}.
+Use este "agora" para resolver TODA expressão relativa: "hoje", "amanhã",
+"depois de amanhã", "sexta", "próxima segunda", "dia 15", "em 2h",
+"daqui uma semana". Se ano/mês não forem ditos, escolha o PRÓXIMO futuro
+mais próximo. Se só a data for dita (sem hora), assuma 09:00 BRT.
+Se só a hora for dita ("às 14h"), use HOJE se ainda não passou, senão AMANHÃ.
 
 Uma MESMA mensagem pode conter VÁRIAS demandas de tipos diferentes
 (ex: "comprar café e sabão, e lembrar de pagar aluguel dia 15" =
@@ -56,9 +65,8 @@ Regras:
      "academico" (obrigação de professor: diário, notas, prova),
      ou "tarefa_rotina" (afazer sem urgência aguda).
    - "descricao_limpa": UMA frase curta imperativa. Ex: "Pagar aluguel".
-   - "prazo_iso": ISO 8601 no fuso America/Sao_Paulo se houver prazo claro
-     (data explícita, "amanhã", "sexta", "dia 15"). Caso contrário null.
-     Para "dia 15" sem mês, assuma o próximo dia 15 futuro.
+   - "prazo_iso": ISO 8601 COM offset -03:00 se houver prazo claro.
+     Caso contrário null.
 3. Para CADA item a comprar, adicione em "itens_compra" com "descricao" e
    "categoria" em: Supermercado, Papelaria, Farmácia, Casa, Outros.
 4. Se a mensagem for pura saudação/desabafo/nada acionável, marque
@@ -71,9 +79,6 @@ Responda APENAS com JSON válido, sem markdown, sem \`\`\`json:
   "tarefas": [ { "tipo": "...", "descricao_limpa": "...", "prazo_iso": null } ],
   "itens_compra": [ { "descricao": "...", "categoria": "..." } ]
 }`;
-
-function agora() {
-  return new Date().toISOString();
 }
 
 async function chamarGemini(
@@ -81,6 +86,7 @@ async function chamarGemini(
   partesUsuario: Array<Record<string, unknown>>,
   modelo: string,
 ): Promise<TriagemResultado> {
+  const systemPrompt = await construirPromptSistema();
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -90,7 +96,7 @@ async function chamarGemini(
     body: JSON.stringify({
       model: modelo,
       messages: [
-        { role: "system", content: PROMPT_SISTEMA },
+        { role: "system", content: systemPrompt },
         { role: "user", content: partesUsuario },
       ],
       response_format: { type: "json_object" },
