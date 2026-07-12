@@ -15,7 +15,9 @@ import { z } from "zod";
 
 const InputSchema = z.object({
   texto: z.string().optional().default(""),
-  origem: z.enum(["whatsapp_texto", "whatsapp_audio", "whatsapp_imagem", "manual"]).default("manual"),
+  origem: z
+    .enum(["manual", "whatsapp_pessoal", "whatsapp_terceiros", "konecta_i"])
+    .default("manual"),
   imagem_base64: z.string().optional(), // data URL completo OU raw base64
   imagem_mime: z.string().optional(),   // ex: "image/jpeg"
   audio_base64: z.string().optional(),  // raw base64
