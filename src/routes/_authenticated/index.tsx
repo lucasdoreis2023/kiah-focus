@@ -152,7 +152,9 @@ function PainelKiah() {
           <TriagemBotao />
           <NovaTarefaBotao />
           <NovoItemBotao />
+          <BotaoSair />
         </div>
+
       </header>
 
       <main className="mx-auto max-w-5xl px-6 pb-24 space-y-10">
