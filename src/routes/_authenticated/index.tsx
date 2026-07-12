@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -7,6 +7,7 @@ import {
   Clock,
   Image as ImageIcon,
   Loader2,
+  LogOut,
   Mic,
   Plus,
   Sparkles,
@@ -18,6 +19,8 @@ import {
 } from "lucide-react";
 
 import { triarMensagem } from "@/lib/kiah-triagem.functions";
+import { reivindicarDadosOrfaos } from "@/lib/kiah-auth.functions";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import {
