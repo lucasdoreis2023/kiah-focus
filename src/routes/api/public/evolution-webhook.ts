@@ -423,7 +423,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         if (remetenteEhNumeroCadastrado && texto && !temImagem && !temAudio) {
           const cmd = await tentarComando(texto, userId);
           if (cmd.tratado) {
-            await enviarWhatsApp(cmd.resposta ?? "✅ Ok.", numeroResposta).catch(() => {});
+            await responderDono(cmd.resposta ?? "✅ Ok.");
             return json({ ok: true, comando: true });
           }
         }
