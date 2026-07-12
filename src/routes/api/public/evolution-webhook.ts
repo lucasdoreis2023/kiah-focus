@@ -279,6 +279,8 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         // Se não achar, cai pro dono da INSTÂNCIA (KIAH_WHATSAPP_NUMERO) —
         // assim mensagens vindas de outros números caem na caixa do dono do Kiah.
         let userId: string | null = null;
+        let roteadoParaDono = false;
+        let numeroDono: string | null = null;
         {
           const { data: donoRem } = await supabaseAdmin
             .from("profiles")
@@ -299,6 +301,8 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
               .maybeSingle();
             if (donoInst?.id) {
               userId = donoInst.id;
+              roteadoParaDono = true;
+              numeroDono = numeroInstancia;
               console.log("[kiah-webhook] roteado p/ dono da instância", numeroInstancia, "(remetente externo", numeroRemetente, ")");
             }
           }
@@ -310,6 +314,12 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
             ignorado: `sem dono para remetente ${numeroRemetente} (fromMe=${fromMe})`,
           });
         }
+
+        // Destino da confirmação: se a mensagem veio de um contato externo
+        // (roteada pro dono da instância), a confirmação vai APENAS pro dono —
+        // o remetente externo não recebe eco pra não parecer que a tarefa
+        // ficou registrada na conta dele.
+        const numeroResposta = roteadoParaDono && numeroDono ? numeroDono : numeroRemetente;
 
         // Anti-loop: se fromMe=true e o texto começa com marcadores do próprio
         // Kiah (as confirmações que ele envia), ignora pra não triar o próprio eco.
@@ -345,7 +355,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         if (texto && !temImagem && !temAudio) {
           const cmd = await tentarComando(texto, userId);
           if (cmd.tratado) {
-            await enviarWhatsApp(cmd.resposta ?? "✅ Ok.", numeroRemetente).catch(() => {});
+            await enviarWhatsApp(cmd.resposta ?? "✅ Ok.", numeroResposta).catch(() => {});
             return json({ ok: true, comando: true });
           }
         }
@@ -382,7 +392,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           console.error("[kiah-webhook] erro baixando mídia", e);
           await enviarWhatsApp(
             "⚠️ Kiah recebeu sua mídia mas não consegui baixar. Tenta reenviar como texto?",
-            numeroRemetente,
+            numeroResposta,
           ).catch(() => {});
           return json({ ok: false, error: "download_midia_falhou" }, 200);
         }
@@ -445,7 +455,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           }
           const resumo = partes.join("\n");
 
-          await enviarWhatsApp(resumo, numeroRemetente).catch((e) =>
+          await enviarWhatsApp(resumo, numeroResposta).catch((e) =>
             console.error("[kiah-webhook] envio confirmação falhou", e),
           );
 
@@ -455,7 +465,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           console.error("[kiah-webhook] triagem falhou", msgErr);
           await enviarWhatsApp(
             `⚠️ Kiah recebeu mas travou na triagem: ${msgErr.slice(0, 140)}`,
-            numeroRemetente,
+            numeroResposta,
           ).catch(() => {});
           return json({ ok: false, error: msgErr }, 200);
         }
