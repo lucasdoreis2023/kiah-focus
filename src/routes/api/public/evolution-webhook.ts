@@ -43,9 +43,51 @@ async function tentarComando(
   texto: string,
   userId: string,
 ): Promise<{ tratado: boolean; resposta?: string }> {
-  const t = texto.trim().toLowerCase();
+  const bruto = texto.trim();
+  const t = bruto.toLowerCase();
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { formatarPrazoBRT, janelaDiaBRT, janelaProximosDias, interpretarDataNatural } =
+    await import("@/lib/kiah-datas.server");
+
+  const idCurto = (id: string) => id.slice(0, 6);
+
+  async function listarAgenda(inicioISO: string, fimISO: string, titulo: string) {
+    const { data, error } = await supabaseAdmin
+      .from("tarefas")
+      .select("id, descricao_limpa, prazo_estimado, tipo_demanda")
+      .eq("user_id", userId)
+      .eq("status", "pendente")
+      .gte("prazo_estimado", inicioISO)
+      .lt("prazo_estimado", fimISO)
+      .order("prazo_estimado", { ascending: true });
+    if (error) return { tratado: true, resposta: `⚠️ Erro: ${error.message}` };
+    if (!data || data.length === 0)
+      return { tratado: true, resposta: `📭 ${titulo}: nada agendado.` };
+    const linhas = data.map((r) => {
+      const ic =
+        r.tipo_demanda === "tarefa_urgente" ? "🔥" :
+        r.tipo_demanda === "academico" ? "📘" : "📝";
+      return `${ic} [${idCurto(r.id)}] ${formatarPrazoBRT(r.prazo_estimado)} — ${r.descricao_limpa}`;
+    });
+    return { tratado: true, resposta: `📅 ${titulo} (${data.length}):\n${linhas.join("\n")}` };
+  }
+
+  // hoje / agenda hoje
+  if (/^(hoje|agenda\s+hoje)\s*[!?.]?$/i.test(t)) {
+    const j = janelaDiaBRT(0);
+    return listarAgenda(j.inicioISO, j.fimISO, "Hoje");
+  }
+  // amanhã / amanha
+  if (/^(amanh[aã]|agenda\s+amanh[aã])\s*[!?.]?$/i.test(t)) {
+    const j = janelaDiaBRT(1);
+    return listarAgenda(j.inicioISO, j.fimISO, "Amanhã");
+  }
+  // semana / agenda / próximos 7 dias
+  if (/^(semana|agenda|pr[oó]xima\s+semana|pr[oó]ximos?\s+7\s+dias)\s*[!?.]?$/i.test(t)) {
+    const j = janelaProximosDias(7);
+    return listarAgenda(j.inicioISO, j.fimISO, "Próximos 7 dias");
+  }
 
   // feito XXXXXX
   let m = t.match(/^feito\s+([a-f0-9]{4,12})\s*$/i);
@@ -67,7 +109,7 @@ async function tentarComando(
     };
   }
 
-  // adiar XXXXXX N
+  // adiar XXXXXX N  (minutos)
   m = t.match(/^adiar\s+([a-f0-9]{4,12})\s+(\d{1,4})\s*$/i);
   if (m) {
     const prefixo = m[1];
@@ -93,7 +135,42 @@ async function tentarComando(
       .eq("id", existente.id);
     return {
       tratado: true,
-      resposta: `⏳ Adiada +${minutos}min: ${existente.descricao_limpa}`,
+      resposta: `⏳ Adiada +${minutos}min: ${existente.descricao_limpa}\n📅 Novo prazo: ${formatarPrazoBRT(novoPrazo)}`,
+    };
+  }
+
+  // remarcar XXXXXX <texto natural>  |  adiar XXXXXX <texto natural>
+  m = bruto.match(/^(?:remarcar|adiar|mover|reagendar)\s+([a-f0-9]{4,12})\s+(.+)$/i);
+  if (m && !/^\d+$/.test(m[2].trim())) {
+    const prefixo = m[1];
+    const expressao = m[2].trim();
+    const { data: existente } = await supabaseAdmin
+      .from("tarefas")
+      .select("id, adiamentos, descricao_limpa")
+      .like("id", `${prefixo}%`)
+      .eq("user_id", userId)
+      .eq("status", "pendente")
+      .limit(1)
+      .maybeSingle();
+    if (!existente)
+      return { tratado: true, resposta: `🤔 Nenhuma tarefa pendente com id "${prefixo}".` };
+    const iso = await interpretarDataNatural(expressao);
+    if (!iso)
+      return {
+        tratado: true,
+        resposta: `🤔 Não entendi a data "${expressao}". Tenta "sexta 9h", "amanhã 14h", "dia 20 10h".`,
+      };
+    await supabaseAdmin
+      .from("tarefas")
+      .update({
+        prazo_estimado: iso,
+        adiamentos: (existente.adiamentos ?? 0) + 1,
+        ultimo_alerta_em: new Date().toISOString(),
+      })
+      .eq("id", existente.id);
+    return {
+      tratado: true,
+      resposta: `📅 Remarcada: ${existente.descricao_limpa}\n→ ${formatarPrazoBRT(iso)}`,
     };
   }
 
@@ -118,7 +195,7 @@ async function tentarComando(
   }
 
   // comprei X (marca item por busca fuzzy)
-  m = texto.trim().match(/^(?:comprei|ja comprei|já comprei)\s+(.+)$/i);
+  m = bruto.match(/^(?:comprei|ja comprei|já comprei)\s+(.+)$/i);
   if (m) {
     const busca = m[1].trim();
     const { data, error } = await supabaseAdmin
@@ -134,6 +211,23 @@ async function tentarComando(
     return {
       tratado: true,
       resposta: `🛒 Comprado: ${data.map((d) => d.descricao).join(", ")}`,
+    };
+  }
+
+  // ajuda
+  if (/^(ajuda|help|comandos|\?)\s*$/i.test(t)) {
+    return {
+      tratado: true,
+      resposta: [
+        "🤖 Comandos do Kiah:",
+        "• hoje / amanhã / semana — sua agenda",
+        "• feito ABC123 — conclui tarefa",
+        "• adiar ABC123 30 — adia N minutos",
+        "• remarcar ABC123 sexta 9h — nova data",
+        "• desisto ABC123 — descarta",
+        "• comprei café — marca da lista",
+        "• (qualquer outra coisa) — triagem por IA",
+      ].join("\n"),
     };
   }
 
