@@ -26,38 +26,49 @@ const InputSchema = z.object({
 });
 
 
-type TriagemResultado = {
-  classe: "tarefa_urgente" | "tarefa_rotina" | "academico" | "lista_compras" | "ruido";
+type TarefaExtraida = {
+  tipo: "tarefa_urgente" | "tarefa_rotina" | "academico";
   descricao_limpa: string;
   prazo_iso: string | null;
+};
+
+type ItemCompra = { descricao: string; categoria: string };
+
+type TriagemResultado = {
+  ruido: boolean;
   raciocinio_curto: string;
-  itens_compra?: Array<{ descricao: string; categoria: string }>;
+  tarefas: TarefaExtraida[];
+  itens_compra: ItemCompra[];
 };
 
 const PROMPT_SISTEMA = `Você é o núcleo de triagem do Kiah, um Segundo Cérebro para um usuário
 (Lucas) com TDAH severo e memória de curto prazo vulnerável. Cada mensagem
-chega crua — texto, transcrição de áudio, ou descrição de foto. Seu papel é:
+chega crua — texto, transcrição de áudio, ou descrição de foto.
 
-1. Compreender a intenção real, mesmo em frases desconexas.
-2. Classificar em UMA categoria:
-   - "tarefa_urgente": prazo em horas, consequência imediata.
-   - "academico": obrigação de trabalho como professor (diário, notas, prova).
-   - "tarefa_rotina": afazer sem urgência específica.
-   - "lista_compras": item(ns) a comprar. Pode ter múltiplos itens.
-   - "ruido": desabafo, saudação, ou nada acionável.
-3. Escrever "descricao_limpa": UMA frase curta imperativa, sem enrolação.
-   Ex: "Lançar frequência do 9º ano B no diário".
-4. Se houver prazo claro, devolver ISO 8601 em "prazo_iso" (fuso America/Sao_Paulo).
-   Caso contrário, null.
-5. Para "lista_compras", preencher "itens_compra" com cada item separado e
-   categoria em: Supermercado, Papelaria, Farmácia, Casa, Outros.
+Uma MESMA mensagem pode conter VÁRIAS demandas de tipos diferentes
+(ex: "comprar café e sabão, e lembrar de pagar aluguel dia 15" =
+2 itens de compra + 1 tarefa). Extraia TODAS.
+
+Regras:
+1. Compreenda a intenção real, mesmo em frases desconexas.
+2. Para CADA tarefa (não-compra) encontrada, adicione um objeto em "tarefas" com:
+   - "tipo": "tarefa_urgente" (prazo em horas, consequência imediata),
+     "academico" (obrigação de professor: diário, notas, prova),
+     ou "tarefa_rotina" (afazer sem urgência aguda).
+   - "descricao_limpa": UMA frase curta imperativa. Ex: "Pagar aluguel".
+   - "prazo_iso": ISO 8601 no fuso America/Sao_Paulo se houver prazo claro
+     (data explícita, "amanhã", "sexta", "dia 15"). Caso contrário null.
+     Para "dia 15" sem mês, assuma o próximo dia 15 futuro.
+3. Para CADA item a comprar, adicione em "itens_compra" com "descricao" e
+   "categoria" em: Supermercado, Papelaria, Farmácia, Casa, Outros.
+4. Se a mensagem for pura saudação/desabafo/nada acionável, marque
+   "ruido": true e deixe os arrays vazios.
 
 Responda APENAS com JSON válido, sem markdown, sem \`\`\`json:
 {
-  "classe": "...",
-  "descricao_limpa": "...",
-  "prazo_iso": null | "2025-...",
+  "ruido": false,
   "raciocinio_curto": "...",
+  "tarefas": [ { "tipo": "...", "descricao_limpa": "...", "prazo_iso": null } ],
   "itens_compra": [ { "descricao": "...", "categoria": "..." } ]
 }`;
 
@@ -158,14 +169,16 @@ export const triarMensagem = createServerFn({ method: "POST" })
 
     const resultado = await chamarGemini(apiKey, partes, modelo);
 
-    // Persistir — usa cliente admin (fase single-user pré-auth).
+    // Persistir — usa cliente admin (permite user_id explícito).
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    if (resultado.classe === "ruido") {
-      return { ok: true, classe: resultado.classe, resultado, criados: 0 };
+    if (resultado.ruido) {
+      return { ok: true, ruido: true, resultado, criados: 0 };
     }
 
-    if (resultado.classe === "lista_compras" && resultado.itens_compra?.length) {
+    let criados = 0;
+
+    if (resultado.itens_compra?.length) {
       const linhas = resultado.itens_compra.map((it) => ({
         descricao: it.descricao,
         categoria: it.categoria || "Outros",
@@ -174,23 +187,23 @@ export const triarMensagem = createServerFn({ method: "POST" })
       }));
       const { error } = await supabaseAdmin.from("itens_lista").insert(linhas);
       if (error) throw new Error(`Falha inserindo itens: ${error.message}`);
-      return { ok: true, classe: resultado.classe, resultado, criados: linhas.length };
+      criados += linhas.length;
     }
 
-    // Tarefa (urgente / rotina / academico)
-    const cadencia =
-      resultado.classe === "tarefa_urgente" || resultado.classe === "academico" ? 30 : 120;
+    if (resultado.tarefas?.length) {
+      const linhas = resultado.tarefas.map((t) => ({
+        descricao_limpa: t.descricao_limpa,
+        tipo_demanda: t.tipo,
+        prazo_estimado: t.prazo_iso,
+        cadencia_alerta_minutos:
+          t.tipo === "tarefa_urgente" || t.tipo === "academico" ? 30 : 120,
+        origem: data.origem,
+        user_id: data.user_id ?? null,
+      }));
+      const { error } = await supabaseAdmin.from("tarefas").insert(linhas);
+      if (error) throw new Error(`Falha inserindo tarefa: ${error.message}`);
+      criados += linhas.length;
+    }
 
-    const { error } = await supabaseAdmin.from("tarefas").insert({
-      descricao_limpa: resultado.descricao_limpa,
-      tipo_demanda: resultado.classe,
-      prazo_estimado: resultado.prazo_iso,
-      cadencia_alerta_minutos: cadencia,
-      origem: data.origem,
-      user_id: data.user_id ?? null,
-    });
-    if (error) throw new Error(`Falha inserindo tarefa: ${error.message}`);
-
-
-    return { ok: true, classe: resultado.classe, resultado, criados: 1 };
+    return { ok: true, ruido: false, resultado, criados };
   });
