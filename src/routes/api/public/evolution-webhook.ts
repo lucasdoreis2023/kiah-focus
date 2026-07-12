@@ -352,9 +352,29 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           });
         }
 
+        // Blindagem: TODA resposta do Kiah só pode ir para o número cadastrado do dono.
+        // Se por qualquer motivo o destino não bater, silencia (nunca responde a terceiros).
+        const destinoAutorizado = normalizarNumeroCadastro(numeroResposta);
+        if (!destinoAutorizado || destinoAutorizado !== numeroCadastradoKiah) {
+          console.log(
+            "[kiah-webhook] IGNORADO destino de resposta não autorizado. destino=",
+            destinoAutorizado,
+            "cadastrado=",
+            numeroCadastradoKiah,
+          );
+          return json({ ok: true, ignorado: "destino_nao_autorizado" });
+        }
+        async function responderDono(texto: string) {
+          if (!texto) return;
+          try {
+            console.log("[kiah-webhook] respondendo dono destino=", destinoAutorizado);
+            await enviarWhatsApp(texto, destinoAutorizado);
+          } catch (e) {
+            console.error("[kiah-webhook] envio falhou", e);
+          }
+        }
 
-        // Confirmação sempre volta para o número cadastrado que recebeu a tarefa,
-        // nunca para um contato externo/grupo não cadastrado.
+
 
 
         // Anti-loop: se fromMe=true e o texto começa com marcadores do próprio
