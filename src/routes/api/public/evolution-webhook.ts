@@ -157,7 +157,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
             console.error("[kiah-webhook] envio confirmação falhou", e),
           );
 
-          return json({ ok: true, ...res });
+          return json({ ...res, ok: true });
         } catch (e) {
           const msgErr = e instanceof Error ? e.message : String(e);
           console.error("[kiah-webhook] triagem falhou", msgErr);
