@@ -24,6 +24,7 @@ import {
 
 import { triarMensagem } from "@/lib/kiah-triagem.functions";
 import { reivindicarDadosOrfaos } from "@/lib/kiah-auth.functions";
+import { obterMeuPerfil } from "@/lib/kiah-perfil.functions";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
