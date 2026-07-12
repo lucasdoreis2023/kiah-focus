@@ -78,7 +78,9 @@ function PainelKiah() {
   const { data: tarefas } = useSuspenseQuery(tarefasPendentesQuery);
   const { data: itens } = useSuspenseQuery(itensListaQuery);
   const reivindicar = useServerFn(reivindicarDadosOrfaos);
+  const carregarPerfil = useServerFn(obterMeuPerfil);
   const [nome, setNome] = useState<string>("");
+  const [precisaVincularWa, setPrecisaVincularWa] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -90,7 +92,10 @@ function PainelKiah() {
         "";
       setNome(n);
     });
-  }, []);
+    carregarPerfil({ data: undefined as never })
+      .then((p) => setPrecisaVincularWa(!p?.whatsapp_numero))
+      .catch(() => {});
+  }, [carregarPerfil]);
 
   // Primeira carga após login: adotar tarefas/itens sem dono e vincular WhatsApp.
   useEffect(() => {
