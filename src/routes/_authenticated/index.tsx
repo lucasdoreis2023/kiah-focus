@@ -589,6 +589,9 @@ function TriagemBotao() {
     try {
       const audio_format_final =
         audioFormat === "mp4" ? "m4a" : (audioFormat ?? undefined);
+      const { data: userData } = await supabase.auth.getUser();
+      const user_id = userData.user?.id;
+      if (!user_id) throw new Error("Sessão expirada — faça login de novo.");
       const res = await triar({
         data: {
           texto,
@@ -597,6 +600,7 @@ function TriagemBotao() {
           imagem_mime: imagemMime ?? undefined,
           audio_base64: audioBase64 ?? undefined,
           audio_format: audio_format_final,
+          user_id,
         },
       });
       if (res.classe === "ruido") {
