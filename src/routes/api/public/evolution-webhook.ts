@@ -38,6 +38,14 @@ type EvolutionPayload = {
   };
 };
 
+function normalizarNumeroCadastro(bruto: string): string {
+  const digitos = (bruto ?? "").replace(/\D/g, "");
+  if (!digitos) return "";
+  if (digitos.startsWith("55")) return digitos;
+  if (digitos.length === 10 || digitos.length === 11) return `55${digitos}`;
+  return digitos;
+}
+
 /** Reconhece e executa comandos curtos vindos do WhatsApp. */
 async function tentarComando(
   texto: string,
@@ -263,7 +271,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         // fromMe pode ser válido no cenário self-chat (Kiah roda no mesmo número).
         // Filtramos abaixo só o eco das próprias respostas do bot.
 
-        const { jidParaNumero, enviarWhatsApp, baixarMidiaBase64 } = await import(
+        const { jidParaNumero, numeroKiah, enviarWhatsApp, baixarMidiaBase64 } = await import(
           "@/lib/kiah-whatsapp.server"
         );
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -275,31 +283,51 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const numeroRemetente = jidParaNumero(jid);
         console.log("[kiah-webhook] numeroRemetente=", numeroRemetente);
 
-        // Resolver dono: SOMENTE pelo número do remetente vinculado em profiles.
-        // Se o número não estiver cadastrado por nenhum usuário, ignoramos —
-        // não há fallback pro dono da instância (evita gravar coisa de gente
-        // desconhecida na conta de outra pessoa).
+        // Resolver dono:
+        // 1) Se o próprio remetente está cadastrado, a tarefa é dele e a resposta volta para ele.
+        // 2) Se é um contato externo escrevendo para o número Kiah cadastrado, grava na conta
+        //    desse número cadastrado e a confirmação volta SOMENTE para o número cadastrado.
+        // 3) Mensagens enviadas por mim para contatos externos (fromMe=true) não entram no fallback.
         let userId: string | null = null;
+        let numeroResposta = "";
         {
           const { data: donoRem } = await supabaseAdmin
             .from("profiles")
-            .select("id")
+            .select("id, whatsapp_numero")
             .eq("whatsapp_numero", numeroRemetente)
             .limit(1)
             .maybeSingle();
-          if (donoRem?.id) userId = donoRem.id;
+          if (donoRem?.id) {
+            userId = donoRem.id;
+            numeroResposta = donoRem.whatsapp_numero ?? numeroRemetente;
+          }
         }
-        if (!userId) {
-          console.log("[kiah-webhook] IGNORADO número não cadastrado. remetente=", numeroRemetente, "fromMe=", fromMe);
+
+        if (!userId && !fromMe) {
+          const numeroCadastradoKiah = normalizarNumeroCadastro(numeroKiah());
+          const { data: donoNumeroCadastrado } = await supabaseAdmin
+            .from("profiles")
+            .select("id, whatsapp_numero")
+            .eq("whatsapp_numero", numeroCadastradoKiah)
+            .limit(1)
+            .maybeSingle();
+          if (donoNumeroCadastrado?.id) {
+            userId = donoNumeroCadastrado.id;
+            numeroResposta = donoNumeroCadastrado.whatsapp_numero ?? numeroCadastradoKiah;
+          }
+        }
+
+        if (!userId || !numeroResposta) {
+          console.log("[kiah-webhook] IGNORADO sem número cadastrado resolvido. remetente=", numeroRemetente, "fromMe=", fromMe);
           return json({
             ok: true,
-            ignorado: `número ${numeroRemetente} não vinculado a nenhuma conta Kiah`,
+            ignorado: `número ${numeroRemetente} não roteado para uma conta Kiah cadastrada`,
           });
         }
 
 
-        // Confirmação sempre volta pro próprio remetente (que é o dono da conta).
-        const numeroResposta = numeroRemetente;
+        // Confirmação sempre volta para o número cadastrado que recebeu a tarefa,
+        // nunca para um contato externo não cadastrado.
 
 
         // Anti-loop: se fromMe=true e o texto começa com marcadores do próprio
