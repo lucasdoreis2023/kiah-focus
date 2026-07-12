@@ -328,14 +328,30 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         }
 
         // Resolver dono:
-        // - Conversa direta recebida de contato externo: entra somente no número cadastrado da instância.
-        // - Self-chat do número cadastrado: entra no próprio cadastro e responde para ele.
-        // - Mensagens enviadas pela instância para contatos externos: ignoradas.
-        // - Grupos: nunca respondem ao grupo/remetente; viram item temporário do número cadastrado.
+        // - Se o remetente direto é cadastrado, a tarefa é dele.
+        // - Se é contato externo não cadastrado, entra no número cadastrado da instância.
+        // - Mensagens enviadas pela instância para contatos externos são ignoradas.
+        // - Grupos nunca recebem resposta; viram item temporário do número cadastrado da instância.
         let userId: string | null = null;
         let numeroResposta = "";
 
-        if (grupo || !fromMe || numeroRemetente === numeroCadastradoKiah) {
+        const perfilRemetente = !grupo ? await perfilPorNumero(numeroRemetente) : null;
+
+        if (grupo) {
+          const donoNumeroCadastrado = await perfilPorNumero(numeroCadastradoKiah);
+          if (donoNumeroCadastrado?.id) {
+            userId = donoNumeroCadastrado.id;
+            numeroResposta = donoNumeroCadastrado.whatsapp_numero ?? numeroCadastradoKiah;
+          }
+        } else if (fromMe) {
+          if (perfilRemetente?.id && numeroRemetente === numeroCadastradoKiah) {
+            userId = perfilRemetente.id;
+            numeroResposta = perfilRemetente.whatsapp_numero ?? numeroRemetente;
+          }
+        } else if (perfilRemetente?.id) {
+          userId = perfilRemetente.id;
+          numeroResposta = perfilRemetente.whatsapp_numero ?? numeroRemetente;
+        } else {
           const donoNumeroCadastrado = await perfilPorNumero(numeroCadastradoKiah);
           if (donoNumeroCadastrado?.id) {
             userId = donoNumeroCadastrado.id;
@@ -383,7 +399,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
             expira_em: expiraEm,
             origem_grupo_jid: jid,
             origem_grupo_nome: grupoNome,
-          } as any);
+          });
 
           if (error) {
             console.error("[kiah-webhook] erro salvando item temporário de grupo", error.message);
