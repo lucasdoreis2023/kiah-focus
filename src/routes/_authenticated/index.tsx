@@ -447,16 +447,31 @@ function SecaoASeguir({
                   {t.prazo_estimado ? ` · ${formatarPrazo(t.prazo_estimado)}` : ""}
                 </p>
               </div>
-              <button
-                onClick={async () => {
-                  await concluirTarefa(t.id);
-                  qc.invalidateQueries({ queryKey: ["tarefas"] });
-                }}
-                className="grid size-9 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition hover:border-ember hover:bg-ember hover:text-ember-foreground"
-                aria-label="Concluir"
-              >
-                <Check className="size-4" />
-              </button>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  onClick={async () => {
+                    await concluirTarefa(t.id);
+                    qc.invalidateQueries({ queryKey: ["tarefas"] });
+                  }}
+                  className="grid size-9 place-items-center rounded-full border border-border text-muted-foreground transition hover:border-ember hover:bg-ember hover:text-ember-foreground"
+                  aria-label="Concluir"
+                >
+                  <Check className="size-4" />
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm("Deletar esta tarefa?")) return;
+                    await descartarTarefa(t.id);
+                    qc.invalidateQueries({ queryKey: ["tarefas"] });
+                  }}
+                  className="grid size-9 place-items-center rounded-full border border-border text-muted-foreground transition hover:border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  aria-label="Deletar"
+                  title="Deletar"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+
             </li>
           ))}
         </ul>
@@ -522,7 +537,7 @@ function SecaoLista({
                           )}
                         </span>
                       </div>
-                      <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="flex shrink-0 gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                         <button
                           onClick={async () => {
                             await marcarItemComprado(item.id);
