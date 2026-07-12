@@ -172,6 +172,29 @@ function PainelKiah() {
 
         {/* CONTENT */}
         <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-5 sm:p-8">
+          {precisaVincularWa && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ember/40 bg-ember/10 px-5 py-4 text-sm">
+              <div className="flex min-w-0 items-start gap-3">
+                <MessageCircle className="mt-0.5 size-5 shrink-0 text-ember" />
+                <div className="min-w-0">
+                  <p className="font-display font-bold text-foreground">
+                    Vincule seu WhatsApp
+                  </p>
+                  <p className="text-muted-foreground">
+                    Enquanto não vincular, o Kiah não vai reconhecer suas mensagens
+                    do zap. Leva 10 segundos.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/perfil"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ember px-4 py-2 text-sm font-bold text-ember-foreground hover:brightness-110"
+              >
+                Vincular agora
+              </Link>
+            </div>
+          )}
+
           <SecaoAgora tarefa={agora} />
 
           <div className="mb-4 grid gap-8 lg:grid-cols-2">
