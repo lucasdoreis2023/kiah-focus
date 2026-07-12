@@ -161,6 +161,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      reivindicar_dados_orfaos: { Args: { _whatsapp: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"
