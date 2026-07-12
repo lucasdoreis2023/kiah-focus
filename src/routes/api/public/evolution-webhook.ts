@@ -455,7 +455,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           }
           const resumo = partes.join("\n");
 
-          await enviarWhatsApp(resumo, numeroRemetente).catch((e) =>
+          await enviarWhatsApp(resumo, numeroResposta).catch((e) =>
             console.error("[kiah-webhook] envio confirmação falhou", e),
           );
 
