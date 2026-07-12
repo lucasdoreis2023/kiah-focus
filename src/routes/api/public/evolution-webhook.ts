@@ -370,11 +370,32 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
             if (itens.length) {
               partes.push(`🛒 ${itens.length} item(ns) na lista: ${itens.map((i) => i.descricao).join(", ")}`);
             }
-            for (const t of tarefas) {
-              const icone =
-                t.tipo === "tarefa_urgente" ? "🔥 URGENTE" :
-                t.tipo === "academico" ? "📘 Acadêmica" : "📝 Tarefa";
-              partes.push(`${icone}: ${t.descricao_limpa}`);
+            if (tarefas.length) {
+              // Buscar IDs recém-criados para exibir prefixo curto + prazo formatado
+              const { formatarPrazoBRT } = await import("@/lib/kiah-datas.server");
+              const descricoes = tarefas.map((t) => t.descricao_limpa);
+              const desde = new Date(Date.now() - 60_000).toISOString();
+              const { data: recentes } = await supabaseAdmin
+                .from("tarefas")
+                .select("id, descricao_limpa, prazo_estimado, tipo_demanda")
+                .eq("user_id", userId)
+                .in("descricao_limpa", descricoes)
+                .gte("created_at", desde)
+                .order("created_at", { ascending: false });
+              const mapa = new Map<string, { id: string; prazo: string | null; tipo: string }>();
+              for (const r of recentes ?? []) {
+                if (!mapa.has(r.descricao_limpa))
+                  mapa.set(r.descricao_limpa, { id: r.id, prazo: r.prazo_estimado, tipo: r.tipo_demanda });
+              }
+              for (const t of tarefas) {
+                const info = mapa.get(t.descricao_limpa);
+                const icone =
+                  t.tipo === "tarefa_urgente" ? "🔥 URGENTE" :
+                  t.tipo === "academico" ? "📘 Acadêmica" : "📝 Tarefa";
+                const idCurto = info ? ` [${info.id.slice(0, 6)}]` : "";
+                const prazoTxt = info?.prazo ? ` · 📅 ${formatarPrazoBRT(info.prazo)}` : "";
+                partes.push(`${icone}${idCurto}: ${t.descricao_limpa}${prazoTxt}`);
+              }
             }
             if (!partes.length) partes.push("✓ Recebido.");
           }
