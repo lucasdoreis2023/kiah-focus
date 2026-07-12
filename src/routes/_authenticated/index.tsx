@@ -127,7 +127,11 @@ function PainelKiah() {
     };
   }, [qc]);
 
-  const [agora, ...restante] = tarefas;
+  // "Foco absoluto" = tarefas vencidas OU com prazo até o fim de hoje.
+  // Sem prazo, só entra como foco se for urgente. Isso evita que uma conta
+  // marcada pro dia 15 apareça como AGORA no dia 12.
+  const agora = escolherFoco(tarefas);
+  const restante = tarefas.filter((t) => t.id !== agora?.id);
   const aSeguir = restante.slice(0, 2);
   const restanteEscondido = Math.max(restante.length - 2, 0);
 
