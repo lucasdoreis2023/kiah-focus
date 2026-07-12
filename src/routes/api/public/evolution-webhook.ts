@@ -298,11 +298,9 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         }
 
 
-        // Destino da confirmação: se a mensagem veio de um contato externo
-        // (roteada pro dono da instância), a confirmação vai APENAS pro dono —
-        // o remetente externo não recebe eco pra não parecer que a tarefa
-        // ficou registrada na conta dele.
-        const numeroResposta = roteadoParaDono && numeroDono ? numeroDono : numeroRemetente;
+        // Confirmação sempre volta pro próprio remetente (que é o dono da conta).
+        const numeroResposta = numeroRemetente;
+
 
         // Anti-loop: se fromMe=true e o texto começa com marcadores do próprio
         // Kiah (as confirmações que ele envia), ignora pra não triar o próprio eco.
