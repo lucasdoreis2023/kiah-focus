@@ -16,11 +16,14 @@ import {
   Zap,
   X,
   AlertTriangle,
+  CalendarDays,
+  History,
+  User,
+  CircleDot,
 } from "lucide-react";
 
 import { triarMensagem } from "@/lib/kiah-triagem.functions";
 import { reivindicarDadosOrfaos } from "@/lib/kiah-auth.functions";
-
 
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -53,7 +56,7 @@ export const Route = createFileRoute("/_authenticated/")({
       { property: "og:title", content: "Kiah — Segundo Cérebro" },
       {
         property: "og:description",
-        content: "Painel minimalista de foco: AGORA, A SEGUIR e Lista de Compras.",
+        content: "Painel de foco absoluto: AGORA, A SEGUIR e Lista de Compras.",
       },
     ],
   }),
@@ -65,33 +68,28 @@ export const Route = createFileRoute("/_authenticated/")({
   component: PainelKiah,
 });
 
-function BotaoSair() {
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-  async function sair() {
-    await qc.cancelQueries();
-    qc.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
-  return (
-    <button
-      onClick={sair}
-      className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-sm text-muted-foreground hover:bg-surface-2"
-      aria-label="Sair"
-      title="Sair"
-    >
-      <LogOut className="size-4" />
-    </button>
-  );
-}
-
+/* ============================================================
+   LAYOUT: sidebar fixa + área principal (AGORA + grid inferior)
+   ============================================================ */
 
 function PainelKiah() {
   const qc = useQueryClient();
   const { data: tarefas } = useSuspenseQuery(tarefasPendentesQuery);
   const { data: itens } = useSuspenseQuery(itensListaQuery);
   const reivindicar = useServerFn(reivindicarDadosOrfaos);
+  const [nome, setNome] = useState<string>("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user;
+      const n =
+        (u?.user_metadata?.full_name as string | undefined) ??
+        (u?.user_metadata?.name as string | undefined) ??
+        u?.email?.split("@")[0] ??
+        "";
+      setNome(n);
+    });
+  }, []);
 
   // Primeira carga após login: adotar tarefas/itens sem dono e vincular WhatsApp.
   useEffect(() => {
@@ -109,7 +107,7 @@ function PainelKiah() {
       .catch((e) => console.error("[kiah] reivindicar falhou", e));
   }, [reivindicar, qc]);
 
-  // Realtime — mantém o painel sincronizado com WhatsApp/Konecta-i quando plugarmos.
+  // Realtime — mantém o painel sincronizado com WhatsApp/Konecta-i.
   useEffect(() => {
     const canal = supabase
       .channel("kiah-painel")
@@ -129,7 +127,6 @@ function PainelKiah() {
     };
   }, [qc]);
 
-
   const [agora, ...restante] = tarefas;
   const aSeguir = restante.slice(0, 2);
   const restanteEscondido = Math.max(restante.length - 2, 0);
@@ -139,34 +136,93 @@ function PainelKiah() {
     return acc;
   }, {});
 
+  const saudacao = saudacaoHora();
+
   return (
-    <div className="min-h-screen">
-      <header className="mx-auto max-w-5xl px-6 pt-10 pb-6 flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-            Segundo cérebro
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold">Kiah</h1>
-        </div>
-        <div className="flex gap-2">
-          <TriagemBotao />
-          <NovaTarefaBotao />
-          <NovoItemBotao />
-          <BotaoSair />
-        </div>
+    <div className="flex min-h-screen w-full bg-background text-foreground selection:bg-ember/30">
+      <SidebarKiah />
 
-      </header>
+      <main className="flex min-h-screen flex-1 flex-col">
+        {/* HEADER */}
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-5 py-4 sm:flex sm:flex-wrap sm:justify-between sm:px-8">
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <span className="text-muted-foreground">{saudacao},</span>
+            <span className="truncate font-semibold text-foreground">
+              {nome || "aqui é Kiah"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <TriagemBotao />
+            <span className="hidden h-4 w-px bg-border sm:block" />
+            <NovaTarefaBotao />
+            <NovoItemBotao />
+            <BotaoSair />
+          </div>
+        </header>
 
-      <main className="mx-auto max-w-5xl px-6 pb-24 space-y-10">
-        <SecaoAgora tarefa={agora} />
-        <SecaoASeguir tarefas={aSeguir} escondido={restanteEscondido} />
-        <SecaoLista itensPorCategoria={itensPorCategoria} total={itens.length} />
+        {/* CONTENT */}
+        <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-5 sm:p-8">
+          <SecaoAgora tarefa={agora} />
+
+          <div className="mb-4 grid gap-8 lg:grid-cols-2">
+            <SecaoASeguir tarefas={aSeguir} escondido={restanteEscondido} />
+            <SecaoLista itensPorCategoria={itensPorCategoria} total={itens.length} />
+          </div>
+        </div>
       </main>
     </div>
   );
 }
 
-/* ---------------- AGORA ---------------- */
+/* ---------------- Sidebar ---------------- */
+
+function SidebarKiah() {
+  const itens = [
+    { label: "Hoje", icon: <CircleDot className="size-4" />, ativo: true },
+    { label: "Agenda", icon: <CalendarDays className="size-4" />, ativo: false },
+    { label: "Lista", icon: <ShoppingBasket className="size-4" />, ativo: false },
+    { label: "Histórico", icon: <History className="size-4" />, ativo: false },
+  ];
+  return (
+    <aside className="hidden w-[220px] shrink-0 flex-col border-r border-border bg-background md:flex">
+      <div className="p-6 pb-4">
+        <h1 className="font-display text-2xl font-extrabold tracking-tight text-ember">
+          KIAH
+        </h1>
+        <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+          Segundo cérebro
+        </p>
+      </div>
+
+      <nav className="flex-1 space-y-1 px-3">
+        {itens.map((it) => (
+          <button
+            key={it.label}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+              it.ativo
+                ? "border border-border/60 bg-surface text-ember"
+                : "text-muted-foreground hover:bg-surface hover:text-foreground"
+            }`}
+          >
+            {it.icon}
+            <span className="font-medium">{it.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      <div className="border-t border-border p-4">
+        <div className="flex items-center gap-3 px-2 text-sm text-muted-foreground">
+          <div className="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-surface">
+            <User className="size-4" />
+          </div>
+          <span className="truncate">Perfil</span>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+/* ---------------- AGORA — herói imersivo ---------------- */
 
 function SecaoAgora({ tarefa }: { tarefa: Tarefa | undefined }) {
   const qc = useQueryClient();
@@ -174,88 +230,123 @@ function SecaoAgora({ tarefa }: { tarefa: Tarefa | undefined }) {
 
   if (!tarefa) {
     return (
-      <section>
-        <RotuloSecao label="Agora" icone={<Zap className="size-3.5" />} />
-        <div className="mt-3 rounded-3xl border border-dashed border-border bg-surface/40 p-10 text-center">
-          <p className="text-lg text-muted-foreground">Nada urgente agora.</p>
-          <p className="mt-1 text-sm text-muted-foreground/70">
-            Respira. Kiah avisa quando algo entrar.
-          </p>
+      <section className="flex flex-col">
+        <RotuloSecao label="Agora" />
+        <div className="mt-3 grid min-h-[320px] place-items-center rounded-3xl border border-dashed border-border bg-surface/40 p-10 text-center">
+          <div>
+            <div className="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-surface">
+              <Zap className="size-5 text-muted-foreground" />
+            </div>
+            <p className="font-display text-2xl font-semibold">
+              Nada urgente agora.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Respira. Kiah avisa quando algo entrar.
+            </p>
+          </div>
         </div>
       </section>
     );
   }
 
-  const urgente = tarefa.tipo_demanda === "tarefa_urgente" || tarefa.tipo_demanda === "academico";
   const adiadoDemais = tarefa.adiamentos >= 3;
 
   return (
-    <section>
-      <RotuloSecao label="Agora" icone={<Zap className="size-3.5" />} />
-      <div
-        className={`mt-3 rounded-3xl p-8 shadow-focus ${
-          urgente
-            ? "bg-urgent text-urgent-foreground"
-            : "bg-primary text-primary-foreground"
-        }`}
-      >
-        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] opacity-80">
-          <span>{rotuloTipo(tarefa.tipo_demanda)}</span>
-          {tarefa.prazo_estimado && (
-            <span className="opacity-75">· {formatarPrazo(tarefa.prazo_estimado)}</span>
-          )}
-        </div>
-        <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
-          {tarefa.descricao_limpa}
-        </h2>
-
-        {adiadoDemais && (
-          <div className="mt-5 flex items-start gap-2 rounded-xl bg-black/20 px-4 py-3 text-sm">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            <p>
-              Lucas, você já adiou isso {tarefa.adiamentos} vezes. É uma tarefa curta —
-              vamos resolver agora.
-            </p>
+    <section className="flex flex-col">
+      <div className="mb-3 flex items-center justify-between">
+        <RotuloSecao label="Agora" />
+        {tarefa.adiamentos > 0 && (
+          <div
+            className={`rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${
+              adiadoDemais
+                ? "border-destructive/50 bg-destructive/15 text-destructive"
+                : "border-border bg-surface text-muted-foreground"
+            }`}
+          >
+            Adiada {tarefa.adiamentos}×
           </div>
         )}
+      </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          <BotaoAcao
-            variante="solido"
-            onClick={async () => {
-              await concluirTarefa(tarefa.id);
-              invalidar();
-            }}
-          >
-            <Check className="size-4" /> Concluí
-          </BotaoAcao>
-          <BotaoAcao
-            variante="fantasma"
-            onClick={async () => {
-              await adiarTarefa(tarefa.id, 15, tarefa.adiamentos);
-              invalidar();
-            }}
-          >
-            <Clock className="size-4" /> +15 min
-          </BotaoAcao>
-          <BotaoAcao
-            variante="fantasma"
-            onClick={async () => {
-              await adiarTarefa(tarefa.id, 60, tarefa.adiamentos);
-              invalidar();
-            }}
-          >
-            <Clock className="size-4" /> +1 h
-          </BotaoAcao>
-          <BotaoAcao
-            variante="fantasma"
-            onClick={async () => {
-              await descartarTarefa(tarefa.id);
-              invalidar();
-            }}
-          >
-            <X className="size-4" /> Desistir
-          </BotaoAcao>
+      <div className="group relative flex min-h-[380px] flex-1 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-ember bg-surface p-8 shadow-focus sm:p-12">
+        {/* brasa glow */}
+        <div className="pointer-events-none absolute -bottom-24 -right-24 size-64 rounded-full bg-ember opacity-10 blur-[120px] transition-opacity duration-1000 group-hover:opacity-20" />
+        <div className="pointer-events-none absolute -top-24 -left-24 size-48 rounded-full bg-ember opacity-[0.06] blur-[100px]" />
+
+        <div className="relative z-10 max-w-2xl text-center">
+          <div className="mb-4 flex items-center justify-center gap-2">
+            <span className="inline-block size-2 animate-pulse rounded-full bg-ember" />
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-ember">
+              Foco absoluto
+            </p>
+            {tarefa.prazo_estimado && (
+              <>
+                <span className="text-muted-foreground/60">·</span>
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {formatarPrazo(tarefa.prazo_estimado)}
+                </span>
+              </>
+            )}
+          </div>
+
+          <h2 className="font-display text-4xl font-extrabold leading-tight text-foreground sm:text-5xl md:text-6xl">
+            {tarefa.descricao_limpa}
+          </h2>
+
+          <p className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">
+            {rotuloTipo(tarefa.tipo_demanda)}
+          </p>
+
+          {adiadoDemais && (
+            <div className="mx-auto mt-6 flex max-w-md items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-left text-sm text-destructive">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <p>
+                Você já adiou isso {tarefa.adiamentos} vezes. É uma tarefa curta —
+                vamos resolver agora.
+              </p>
+            </div>
+          )}
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={async () => {
+                await concluirTarefa(tarefa.id);
+                invalidar();
+              }}
+              className="rounded-2xl bg-ember px-8 py-4 text-base font-bold text-ember-foreground shadow-ember transition-all hover:brightness-110 active:scale-95 sm:px-10 sm:py-5 sm:text-lg"
+            >
+              <span className="inline-flex items-center gap-2">
+                <Check className="size-5" /> Concluí
+              </span>
+            </button>
+            <div className="flex gap-2">
+              <BotaoSecundario
+                onClick={async () => {
+                  await adiarTarefa(tarefa.id, 15, tarefa.adiamentos);
+                  invalidar();
+                }}
+              >
+                <Clock className="size-4" /> +15 min
+              </BotaoSecundario>
+              <BotaoSecundario
+                onClick={async () => {
+                  await adiarTarefa(tarefa.id, 60, tarefa.adiamentos);
+                  invalidar();
+                }}
+              >
+                <Clock className="size-4" /> +1 h
+              </BotaoSecundario>
+            </div>
+            <button
+              onClick={async () => {
+                await descartarTarefa(tarefa.id);
+                invalidar();
+              }}
+              className="rounded-2xl px-5 py-4 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive sm:py-5"
+            >
+              Desistir
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -277,17 +368,21 @@ function SecaoASeguir({
     <section>
       <RotuloSecao label="A seguir" />
       {tarefas.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">Nada na fila.</p>
+        <p className="mt-4 rounded-xl border border-dashed border-border/60 bg-surface/30 px-5 py-6 text-sm text-muted-foreground">
+          Nada na fila.
+        </p>
       ) : (
-        <ul className="mt-3 space-y-2">
+        <ul className="mt-4 space-y-3">
           {tarefas.map((t) => (
             <li
               key={t.id}
-              className="flex items-center justify-between gap-4 rounded-2xl bg-surface px-5 py-4"
+              className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface/50 p-5 transition-colors hover:border-ember/40 hover:bg-surface"
             >
               <div className="min-w-0">
-                <p className="truncate text-base">{t.descricao_limpa}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="font-display font-semibold text-foreground">
+                  {t.descricao_limpa}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
                   {rotuloTipo(t.tipo_demanda)}
                   {t.prazo_estimado ? ` · ${formatarPrazo(t.prazo_estimado)}` : ""}
                 </p>
@@ -297,7 +392,7 @@ function SecaoASeguir({
                   await concluirTarefa(t.id);
                   qc.invalidateQueries({ queryKey: ["tarefas"] });
                 }}
-                className="shrink-0 rounded-full bg-surface-2 p-2 text-muted-foreground transition hover:bg-success hover:text-success-foreground"
+                className="grid size-9 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition hover:border-ember hover:bg-ember hover:text-ember-foreground"
                 aria-label="Concluir"
               >
                 <Check className="size-4" />
@@ -328,60 +423,91 @@ function SecaoLista({
 
   return (
     <section>
-      <RotuloSecao
-        label="Lista de compras"
-        icone={<ShoppingBasket className="size-3.5" />}
-      />
+      <RotuloSecao label="Lista de compras" />
       {total === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">Nada na lista.</p>
+        <p className="mt-4 rounded-xl border border-dashed border-border/60 bg-surface/30 px-5 py-6 text-sm text-muted-foreground">
+          Nada na lista.
+        </p>
       ) : (
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          {Object.entries(itensPorCategoria).map(([categoria, itens]) => (
-            <div key={categoria} className="rounded-2xl bg-surface p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                {categoria}
-              </p>
-              <ul className="mt-3 space-y-1.5">
-                {itens.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2"
-                  >
-                    <span className="truncate text-sm">{item.descricao}</span>
-                    <div className="flex shrink-0 gap-1">
-                      <button
-                        onClick={async () => {
-                          await marcarItemComprado(item.id);
-                          qc.invalidateQueries({ queryKey: ["itens_lista"] });
-                        }}
-                        className="rounded-md p-1.5 text-muted-foreground hover:bg-success hover:text-success-foreground"
-                        aria-label="Comprei"
-                      >
-                        <Check className="size-3.5" />
-                      </button>
-                      <button
-                        onClick={async () => {
-                          await removerItemLista(item.id);
-                          qc.invalidateQueries({ queryKey: ["itens_lista"] });
-                        }}
-                        className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
-                        aria-label="Remover"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <div className="mt-4 rounded-xl border border-border bg-surface/40 p-5">
+          <div className="space-y-6">
+            {Object.entries(itensPorCategoria).map(([categoria, itens], idx) => (
+              <div key={categoria}>
+                <span
+                  className={`inline-block border-b pb-1 text-[10px] font-bold uppercase tracking-widest ${
+                    idx === 0
+                      ? "border-ember/60 text-ember"
+                      : "border-border text-muted-foreground"
+                  }`}
+                >
+                  {categoria}
+                </span>
+                <ul className="mt-3 space-y-1">
+                  {itens.map((item) => (
+                    <li
+                      key={item.id}
+                      className="group flex items-center justify-between gap-3 rounded-md px-2 py-2 text-sm text-foreground/85 hover:bg-surface"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="size-4 shrink-0 rounded-sm border border-border" />
+                        <span className="truncate">{item.descricao}</span>
+                      </div>
+                      <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          onClick={async () => {
+                            await marcarItemComprado(item.id);
+                            qc.invalidateQueries({ queryKey: ["itens_lista"] });
+                          }}
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-ember hover:text-ember-foreground"
+                          aria-label="Comprei"
+                        >
+                          <Check className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await removerItemLista(item.id);
+                            qc.invalidateQueries({ queryKey: ["itens_lista"] });
+                          }}
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </section>
   );
 }
 
-/* ---------------- Formulários (fase manual) ---------------- */
+/* ---------------- Ações do header ---------------- */
+
+function BotaoSair() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  async function sair() {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+  return (
+    <button
+      onClick={sair}
+      className="grid size-9 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+      aria-label="Sair"
+      title="Sair"
+    >
+      <LogOut className="size-4" />
+    </button>
+  );
+}
 
 function NovaTarefaBotao() {
   const [aberto, setAberto] = useState(false);
@@ -410,9 +536,9 @@ function NovaTarefaBotao() {
     <>
       <button
         onClick={() => setAberto(true)}
-        className="inline-flex items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-sm hover:bg-surface-2"
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
       >
-        <Plus className="size-4" /> Tarefa
+        <Plus className="size-4" /> <span className="hidden sm:inline">Tarefa</span>
       </button>
       {aberto && (
         <Modal titulo="Nova tarefa" onClose={() => setAberto(false)}>
@@ -445,7 +571,7 @@ function NovaTarefaBotao() {
             </div>
             <button
               type="submit"
-              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="w-full rounded-lg bg-ember px-4 py-2.5 text-sm font-bold text-ember-foreground hover:brightness-110"
             >
               Registrar
             </button>
@@ -475,9 +601,9 @@ function NovoItemBotao() {
     <>
       <button
         onClick={() => setAberto(true)}
-        className="inline-flex items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-sm hover:bg-surface-2"
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
       >
-        <Plus className="size-4" /> Item
+        <Plus className="size-4" /> <span className="hidden sm:inline">Item</span>
       </button>
       {aberto && (
         <Modal titulo="Novo item da lista" onClose={() => setAberto(false)}>
@@ -502,7 +628,7 @@ function NovoItemBotao() {
             </select>
             <button
               type="submit"
-              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="w-full rounded-lg bg-ember px-4 py-2.5 text-sm font-bold text-ember-foreground hover:brightness-110"
             >
               Adicionar
             </button>
@@ -513,7 +639,7 @@ function NovoItemBotao() {
   );
 }
 
-/* ---------------- Triagem IA (fase 2) ---------------- */
+/* ---------------- Triagem IA ---------------- */
 
 function TriagemBotao() {
   const [aberto, setAberto] = useState(false);
@@ -625,7 +751,7 @@ function TriagemBotao() {
     <>
       <button
         onClick={() => setAberto(true)}
-        className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+        className="inline-flex items-center gap-1.5 rounded-full border border-ember px-3 py-1.5 text-sm font-medium text-ember transition-colors hover:bg-ember/10 sm:px-4 sm:py-2"
       >
         <Sparkles className="size-4" /> Triar
       </button>
@@ -651,7 +777,7 @@ function TriagemBotao() {
               className="w-full resize-none rounded-lg bg-input px-3 py-2.5 text-sm outline-none ring-ring focus:ring-2"
             />
             <div className="flex flex-wrap gap-2">
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs hover:bg-surface-2">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-muted-foreground">
                 <ImageIcon className="size-3.5" />
                 {imagemBase64 ? "Imagem anexada" : "Anexar imagem"}
                 <input
@@ -666,8 +792,8 @@ function TriagemBotao() {
                 onClick={toggleGravacao}
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs ${
                   gravando
-                    ? "bg-urgent text-urgent-foreground"
-                    : "bg-surface hover:bg-surface-2"
+                    ? "bg-ember text-ember-foreground"
+                    : "border border-border bg-surface hover:border-muted-foreground"
                 }`}
               >
                 <Mic className="size-3.5" />
@@ -686,21 +812,21 @@ function TriagemBotao() {
                     setAudioBase64(null);
                     setAudioFormat(null);
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:bg-surface-2"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground hover:border-muted-foreground"
                 >
                   <X className="size-3.5" /> Limpar anexos
                 </button>
               )}
             </div>
             {feedback && (
-              <p className="rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
+              <p className="rounded-lg bg-surface px-3 py-2 text-xs text-muted-foreground">
                 {feedback}
               </p>
             )}
             <button
               onClick={enviar}
               disabled={processando}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-ember px-4 py-2.5 text-sm font-bold text-ember-foreground hover:brightness-110 disabled:opacity-60"
             >
               {processando ? (
                 <>
@@ -733,17 +859,17 @@ function Modal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl bg-card p-6 shadow-focus"
+        className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-focus"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-medium">{titulo}</h3>
+          <h3 className="font-display text-lg font-semibold">{titulo}</h3>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-muted-foreground hover:bg-surface-2"
+            className="rounded-md p-1 text-muted-foreground hover:bg-surface"
             aria-label="Fechar"
           >
             <X className="size-4" />
@@ -755,32 +881,26 @@ function Modal({
   );
 }
 
-function RotuloSecao({ label, icone }: { label: string; icone?: React.ReactNode }) {
+function RotuloSecao({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-      {icone}
-      <span>{label}</span>
-    </div>
+    <p className="font-display text-xs font-bold uppercase tracking-[0.25em] text-muted-foreground">
+      {label}
+    </p>
   );
 }
 
-function BotaoAcao({
+function BotaoSecundario({
   children,
   onClick,
-  variante,
 }: {
   children: React.ReactNode;
   onClick: () => void;
-  variante: "solido" | "fantasma";
 }) {
-  const base =
-    "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition";
-  const estilo =
-    variante === "solido"
-      ? "bg-black/25 hover:bg-black/40"
-      : "bg-white/10 hover:bg-white/20";
   return (
-    <button onClick={onClick} className={`${base} ${estilo}`}>
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-background px-5 py-4 text-sm font-medium text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground sm:py-5"
+    >
       {children}
     </button>
   );
@@ -805,4 +925,12 @@ function formatarPrazo(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function saudacaoHora() {
+  const h = new Date().getHours();
+  if (h < 5) return "Boa madrugada";
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
 }
