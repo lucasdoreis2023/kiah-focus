@@ -279,6 +279,8 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         // Se não achar, cai pro dono da INSTÂNCIA (KIAH_WHATSAPP_NUMERO) —
         // assim mensagens vindas de outros números caem na caixa do dono do Kiah.
         let userId: string | null = null;
+        let roteadoParaDono = false;
+        let numeroDono: string | null = null;
         {
           const { data: donoRem } = await supabaseAdmin
             .from("profiles")
@@ -299,6 +301,8 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
               .maybeSingle();
             if (donoInst?.id) {
               userId = donoInst.id;
+              roteadoParaDono = true;
+              numeroDono = numeroInstancia;
               console.log("[kiah-webhook] roteado p/ dono da instância", numeroInstancia, "(remetente externo", numeroRemetente, ")");
             }
           }
@@ -310,6 +314,12 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
             ignorado: `sem dono para remetente ${numeroRemetente} (fromMe=${fromMe})`,
           });
         }
+
+        // Destino da confirmação: se a mensagem veio de um contato externo
+        // (roteada pro dono da instância), a confirmação vai APENAS pro dono —
+        // o remetente externo não recebe eco pra não parecer que a tarefa
+        // ficou registrada na conta dele.
+        const numeroResposta = roteadoParaDono && numeroDono ? numeroDono : numeroRemetente;
 
         // Anti-loop: se fromMe=true e o texto começa com marcadores do próprio
         // Kiah (as confirmações que ele envia), ignora pra não triar o próprio eco.
