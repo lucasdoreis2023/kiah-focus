@@ -465,7 +465,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           console.error("[kiah-webhook] triagem falhou", msgErr);
           await enviarWhatsApp(
             `⚠️ Kiah recebeu mas travou na triagem: ${msgErr.slice(0, 140)}`,
-            numeroRemetente,
+            numeroResposta,
           ).catch(() => {});
           return json({ ok: false, error: msgErr }, 200);
         }
