@@ -170,7 +170,10 @@ export const Route = createFileRoute("/api/public/alertas-persistentes")({
 
           try {
             await enviarWhatsApp(envio.texto, numero);
-            await supabaseAdmin.from("tarefas").update(envio.patch).eq("id", t.id);
+            await supabaseAdmin
+              .from("tarefas")
+              .update(envio.patch as never)
+              .eq("id", t.id);
             enviados++;
             detalhes.push({ id: t.id, motivo: envio.motivo });
           } catch (e) {
