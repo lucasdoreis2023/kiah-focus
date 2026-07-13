@@ -296,14 +296,28 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const d = payload.data;
         const jid = d?.key?.remoteJid ?? "";
         const fromMe = d?.key?.fromMe === true;
-        console.log("[kiah-webhook] jid=", jid, "fromMe=", fromMe, "messageType=", d?.messageType, "pushName=", d?.pushName);
+        const messageId = d?.key?.id ?? "";
+        console.log("[kiah-webhook] jid=", jid, "fromMe=", fromMe, "messageType=", d?.messageType, "pushName=", d?.pushName, "id=", messageId);
 
         const { jidParaNumero, numeroKiah, enviarWhatsApp, baixarMidiaBase64 } = await import(
           "@/lib/kiah-whatsapp.server"
         );
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        // ── Dedupe: ignora retentativas da Evolution para o mesmo message_id.
+        if (messageId) {
+          const { error: dupErr } = await supabaseAdmin
+            .from("webhook_eventos_processados")
+            .insert({ message_id: messageId });
+          if (dupErr) {
+            // Conflito de PK = já processado antes.
+            console.log("[kiah-webhook] IGNORADO duplicado message_id=", messageId);
+            return json({ ok: true, ignorado: "duplicado" });
+          }
+        }
+
         const numeroCadastradoKiahTop = normalizarNumeroCadastro(numeroKiah());
+
 
         // ─── Grupos: só processa se explicitamente permitido pelo dono. ───
         if (ehJidGrupo(jid)) {
