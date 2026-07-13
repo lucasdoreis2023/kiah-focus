@@ -397,33 +397,8 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const temImagem = !!(msg as any).imageMessage;
         const temAudio = !!(msg as any).audioMessage;
 
-        if (grupo) {
-          const expiraEm = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-          const grupoNome = d?.pushName || "Grupo WhatsApp";
-          const descricao = resumoItemGrupo(texto, d?.messageType, grupoNome);
+        // Grupos já foram bloqueados no topo do handler; nada a fazer aqui.
 
-          const { error } = await supabaseAdmin.from("itens_lista").insert({
-            descricao,
-            categoria: CATEGORIA_GRUPO_BLOQUEADO,
-            origem: "whatsapp_terceiros",
-            user_id: userId,
-            expira_em: expiraEm,
-            origem_grupo_jid: jid,
-            origem_grupo_nome: grupoNome,
-          });
-
-          if (error) {
-            console.error("[kiah-webhook] erro salvando item temporário de grupo", error.message);
-            await responderDono(
-              `⚠️ Kiah recebeu uma mensagem de grupo, mas não consegui arquivar: ${error.message.slice(0, 120)}`,
-            );
-
-            return json({ ok: false, error: error.message }, 200);
-          }
-
-          console.log("[kiah-webhook] grupo bloqueado arquivado temporariamente", jid);
-          return json({ ok: true, grupo_bloqueado: true, expira_em: expiraEm });
-        }
 
         // Se é texto puro, tentar comando primeiro
         if (remetenteEhNumeroCadastrado && texto && !temImagem && !temAudio) {
