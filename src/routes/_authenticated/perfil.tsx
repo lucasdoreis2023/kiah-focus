@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, LogOut, Check, Loader2, MessageCircle, Trash2 } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { ArrowLeft, LogOut, Check, Loader2, MessageCircle, Trash2, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,20 @@ import {
   salvarMeuWhatsapp,
   removerMeuWhatsapp,
 } from "@/lib/kiah-perfil.functions";
+import {
+  listarMeusGrupos,
+  alternarGrupoPermitido,
+  removerGrupo,
+} from "@/lib/kiah-grupos.functions";
+
+type Grupo = {
+  id: string;
+  grupo_jid: string;
+  grupo_nome: string | null;
+  permitido: boolean;
+  detectado_em: string;
+  ultima_mensagem_em: string;
+};
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   head: () => ({
@@ -24,6 +38,9 @@ function PerfilPage() {
   const carregar = useServerFn(obterMeuPerfil);
   const salvar = useServerFn(salvarMeuWhatsapp);
   const remover = useServerFn(removerMeuWhatsapp);
+  const carregarGrupos = useServerFn(listarMeusGrupos);
+  const alternarGrupo = useServerFn(alternarGrupoPermitido);
+  const removerGrupoFn = useServerFn(removerGrupo);
 
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
@@ -31,9 +48,21 @@ function PerfilPage() {
   const [novoNumero, setNovoNumero] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [feedback, setFeedback] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const [grupos, setGrupos] = useState<Grupo[]>([]);
+  const [carregandoGrupos, setCarregandoGrupos] = useState(false);
 
   const qc = useQueryClient();
   const navigate = useNavigate();
+
+  const recarregarGrupos = useCallback(async () => {
+    setCarregandoGrupos(true);
+    try {
+      const g = await carregarGrupos({ data: undefined as never });
+      setGrupos(g as Grupo[]);
+    } finally {
+      setCarregandoGrupos(false);
+    }
+  }, [carregarGrupos]);
 
   async function recarregar() {
     const { data } = await supabase.auth.getUser();
@@ -48,6 +77,7 @@ function PerfilPage() {
     const prof = await carregar({ data: undefined as never });
     setWhatsapp(prof?.whatsapp_numero ?? "");
     setNovoNumero(prof?.whatsapp_numero ?? "");
+    await recarregarGrupos();
   }
 
   useEffect(() => {
@@ -191,6 +221,80 @@ function PerfilPage() {
           </ul>
         </div>
       </section>
+
+      {/* Grupos de WhatsApp — allowlist */}
+      <section className="mt-8 rounded-xl border border-border bg-surface/40 p-6">
+        <div className="mb-1 flex items-center gap-2">
+          <Users className="size-4 text-ember" />
+          <h2 className="font-display text-lg font-bold">Grupos do WhatsApp</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Por padrão o Kiah <strong>ignora</strong> qualquer grupo. Aqui aparece a lista
+          dos grupos que já mandaram mensagem. Ative os grupos cuja triagem você quer
+          que o Kiah faça — o resto continua silenciado.
+        </p>
+
+        <div className="mt-5 space-y-2">
+          {carregandoGrupos && (
+            <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
+              <Loader2 className="size-3 animate-spin" /> Carregando…
+            </p>
+          )}
+          {!carregandoGrupos && grupos.length === 0 && (
+            <p className="rounded-lg border border-dashed border-border bg-background/40 p-4 text-xs text-muted-foreground">
+              Nenhum grupo detectado ainda. Assim que um grupo enviar mensagem para o
+              número vinculado, ele aparece aqui para você liberar ou não.
+            </p>
+          )}
+          {grupos.map((g) => (
+            <div
+              key={g.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background/40 p-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">
+                  {g.grupo_nome || "Grupo sem nome"}
+                </p>
+                <p className="truncate font-mono text-[10px] text-muted-foreground">
+                  {g.grupo_jid}
+                </p>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Última mensagem: {new Date(g.ultima_mensagem_em).toLocaleString("pt-BR")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await alternarGrupo({ data: { id: g.id, permitido: !g.permitido } });
+                    await recarregarGrupos();
+                  }}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
+                    g.permitido
+                      ? "bg-ember text-ember-foreground"
+                      : "border border-border bg-surface text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {g.permitido ? "Permitido" : "Ignorado"}
+                </button>
+                <button
+                  type="button"
+                  aria-label="Remover grupo da lista"
+                  onClick={async () => {
+                    if (!confirm(`Remover "${g.grupo_nome || g.grupo_jid}" da lista?`)) return;
+                    await removerGrupoFn({ data: { id: g.id } });
+                    await recarregarGrupos();
+                  }}
+                  className="rounded-lg border border-border bg-surface p-2 text-muted-foreground hover:border-destructive hover:text-destructive"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
 
       <button
         onClick={sair}

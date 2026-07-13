@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      grupos_whatsapp: {
+        Row: {
+          created_at: string
+          detectado_em: string
+          grupo_jid: string
+          grupo_nome: string | null
+          id: string
+          permitido: boolean
+          ultima_mensagem_em: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detectado_em?: string
+          grupo_jid: string
+          grupo_nome?: string | null
+          id?: string
+          permitido?: boolean
+          ultima_mensagem_em?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detectado_em?: string
+          grupo_jid?: string
+          grupo_nome?: string | null
+          id?: string
+          permitido?: boolean
+          ultima_mensagem_em?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       itens_lista: {
         Row: {
           categoria: string
