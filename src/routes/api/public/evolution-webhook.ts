@@ -589,7 +589,9 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
             const itens = res.resultado.itens_compra ?? [];
             const tarefas = res.resultado.tarefas ?? [];
             if (itens.length) {
-              partes.push(`🛒 ${itens.length} item(ns) na lista: ${itens.map((i) => i.descricao).join(", ")}`);
+              partes.push(
+                `✅ +${itens.length} na lista: ${itens.map((i) => i.descricao).join(", ")}`,
+              );
             }
             if (tarefas.length) {
               // Buscar IDs recém-criados para exibir prefixo curto + prazo formatado
@@ -619,6 +621,31 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
               }
             }
             if (!partes.length) partes.push("✓ Recebido.");
+
+            // Sempre que houver item de compra novo, mandar a lista completa atualizada.
+            if (itens.length) {
+              const { data: pendentes } = await supabaseAdmin
+                .from("itens_lista")
+                .select("descricao, categoria, created_at")
+                .eq("user_id", userId)
+                .eq("comprado", false)
+                .order("categoria", { ascending: true })
+                .order("created_at", { ascending: true });
+              if (pendentes && pendentes.length) {
+                const grupos = new Map<string, typeof pendentes>();
+                for (const it of pendentes) {
+                  const cat = it.categoria || "Outros";
+                  if (!grupos.has(cat)) grupos.set(cat, [] as any);
+                  grupos.get(cat)!.push(it);
+                }
+                const bloco: string[] = [`\n🛒 Lista atualizada (${pendentes.length}):`];
+                for (const [cat, arr] of grupos) {
+                  bloco.push(`\n*${cat}*`);
+                  for (const it of arr) bloco.push(`• ${it.descricao}`);
+                }
+                partes.push(bloco.join("\n"));
+              }
+            }
           }
           const resumo = partes.join("\n");
 
