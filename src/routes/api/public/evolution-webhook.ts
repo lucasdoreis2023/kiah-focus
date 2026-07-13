@@ -312,7 +312,9 @@ async function tentarComando(
       tratado: true,
       resposta: [
         "🤖 Comandos do Kiah:",
-        "• hoje / amanhã / semana — sua agenda",
+        "• *lista* — mostra a lista de compras completa",
+        "• *tarefas* — mostra tarefas pendentes",
+        "• hoje / amanhã / semana — agenda por data",
         "• feito ABC123 — conclui tarefa",
         "• adiar ABC123 30 — adia N minutos",
         "• remarcar ABC123 sexta 9h — nova data",
