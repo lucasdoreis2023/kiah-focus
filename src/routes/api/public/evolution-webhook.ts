@@ -298,18 +298,65 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const fromMe = d?.key?.fromMe === true;
         console.log("[kiah-webhook] jid=", jid, "fromMe=", fromMe, "messageType=", d?.messageType, "pushName=", d?.pushName);
 
-        // Grupos são bloqueados por completo — Kiah só processa conversas diretas.
-        if (ehJidGrupo(jid)) {
-          console.log("[kiah-webhook] IGNORADO mensagem de grupo", jid);
-          return json({ ok: true, ignorado: "grupo_bloqueado" });
-        }
-        // fromMe pode ser válido no cenário self-chat (Kiah roda no mesmo número).
-        // Filtramos abaixo só o eco das próprias respostas do bot.
-
         const { jidParaNumero, numeroKiah, enviarWhatsApp, baixarMidiaBase64 } = await import(
           "@/lib/kiah-whatsapp.server"
         );
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        const numeroCadastradoKiahTop = normalizarNumeroCadastro(numeroKiah());
+
+        // ─── Grupos: só processa se explicitamente permitido pelo dono. ───
+        if (ehJidGrupo(jid)) {
+          const { data: dono } = await supabaseAdmin
+            .from("profiles")
+            .select("id")
+            .eq("whatsapp_numero", numeroCadastradoKiahTop)
+            .limit(1)
+            .maybeSingle();
+
+          if (!dono?.id) {
+            console.log("[kiah-webhook] grupo ignorado: sem dono cadastrado");
+            return json({ ok: true, ignorado: "grupo_sem_dono" });
+          }
+
+          const nomeGrupo =
+            (d?.message as any)?.groupName ??
+            (d as any)?.groupMetadata?.subject ??
+            d?.pushName ??
+            null;
+
+          const { data: existente } = await supabaseAdmin
+            .from("grupos_whatsapp")
+            .select("id, permitido, grupo_nome")
+            .eq("user_id", dono.id)
+            .eq("grupo_jid", jid)
+            .maybeSingle();
+
+          let permitido = false;
+          if (existente) {
+            permitido = existente.permitido;
+            await supabaseAdmin
+              .from("grupos_whatsapp")
+              .update({
+                ultima_mensagem_em: new Date().toISOString(),
+                grupo_nome: existente.grupo_nome ?? nomeGrupo,
+              })
+              .eq("id", existente.id);
+          } else {
+            await supabaseAdmin.from("grupos_whatsapp").insert({
+              user_id: dono.id,
+              grupo_jid: jid,
+              grupo_nome: nomeGrupo,
+              permitido: false,
+            });
+          }
+
+          if (!permitido) {
+            console.log("[kiah-webhook] grupo detectado e ignorado (não permitido):", jid);
+            return json({ ok: true, ignorado: "grupo_nao_permitido" });
+          }
+          // Se permitido, segue o fluxo normal abaixo (triagem).
+        }
 
         // O número do "outro lado" da conversa. Se fromMe=true (a instância
         // enviou), remoteJid é o destinatário. No cenário "Kiah roda no meu
