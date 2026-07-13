@@ -44,6 +44,11 @@ function PerfilPage() {
   const carregarGrupos = useServerFn(listarMeusGrupos);
   const alternarGrupo = useServerFn(alternarGrupoPermitido);
   const removerGrupoFn = useServerFn(removerGrupo);
+  const sincronizarGrupos = useServerFn(sincronizarGruposEvolution);
+
+  const [sincronizando, setSincronizando] = useState(false);
+  const [sincroMsg, setSincroMsg] = useState<string | null>(null);
+
 
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
