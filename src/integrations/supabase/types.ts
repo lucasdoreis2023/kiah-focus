@@ -194,6 +194,21 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_eventos_processados: {
+        Row: {
+          message_id: string
+          processado_em: string
+        }
+        Insert: {
+          message_id: string
+          processado_em?: string
+        }
+        Update: {
+          message_id?: string
+          processado_em?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
