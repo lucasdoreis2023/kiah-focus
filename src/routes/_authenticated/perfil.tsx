@@ -38,6 +38,9 @@ function PerfilPage() {
   const carregar = useServerFn(obterMeuPerfil);
   const salvar = useServerFn(salvarMeuWhatsapp);
   const remover = useServerFn(removerMeuWhatsapp);
+  const carregarGrupos = useServerFn(listarMeusGrupos);
+  const alternarGrupo = useServerFn(alternarGrupoPermitido);
+  const removerGrupoFn = useServerFn(removerGrupo);
 
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
@@ -45,9 +48,21 @@ function PerfilPage() {
   const [novoNumero, setNovoNumero] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [feedback, setFeedback] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const [grupos, setGrupos] = useState<Grupo[]>([]);
+  const [carregandoGrupos, setCarregandoGrupos] = useState(false);
 
   const qc = useQueryClient();
   const navigate = useNavigate();
+
+  const recarregarGrupos = useCallback(async () => {
+    setCarregandoGrupos(true);
+    try {
+      const g = await carregarGrupos({ data: undefined as never });
+      setGrupos(g as Grupo[]);
+    } finally {
+      setCarregandoGrupos(false);
+    }
+  }, [carregarGrupos]);
 
   async function recarregar() {
     const { data } = await supabase.auth.getUser();
@@ -62,6 +77,7 @@ function PerfilPage() {
     const prof = await carregar({ data: undefined as never });
     setWhatsapp(prof?.whatsapp_numero ?? "");
     setNovoNumero(prof?.whatsapp_numero ?? "");
+    await recarregarGrupos();
   }
 
   useEffect(() => {
