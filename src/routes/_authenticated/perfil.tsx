@@ -58,6 +58,8 @@ function PerfilPage() {
   const [feedback, setFeedback] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [carregandoGrupos, setCarregandoGrupos] = useState(false);
+  const [buscaGrupo, setBuscaGrupo] = useState("");
+  const [filtroGrupo, setFiltroGrupo] = useState<"todos" | "permitidos" | "ignorados">("todos");
 
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -278,7 +280,35 @@ function PerfilPage() {
         </div>
 
 
-        <div className="mt-5 space-y-2">
+        <div className="mt-5 space-y-3">
+          {grupos.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={buscaGrupo}
+                onChange={(e) => setBuscaGrupo(e.target.value)}
+                placeholder="Buscar grupo por nome…"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-background/40 px-3 py-2 text-sm outline-none focus:border-ember"
+              />
+              <div className="flex gap-1 rounded-lg border border-border bg-background/40 p-1">
+                {(["todos", "permitidos", "ignorados"] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setFiltroGrupo(f)}
+                    className={`rounded-md px-2.5 py-1 text-xs font-semibold capitalize ${
+                      filtroGrupo === f
+                        ? "bg-ember text-ember-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {carregandoGrupos && (
             <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
               <Loader2 className="size-3 animate-spin" /> Carregando…
@@ -286,56 +316,92 @@ function PerfilPage() {
           )}
           {!carregandoGrupos && grupos.length === 0 && (
             <p className="rounded-lg border border-dashed border-border bg-background/40 p-4 text-xs text-muted-foreground">
-              Nenhum grupo detectado ainda. Assim que um grupo enviar mensagem para o
-              número vinculado, ele aparece aqui para você liberar ou não.
+              Nenhum grupo detectado ainda. Clique em "Sincronizar grupos do WhatsApp"
+              acima para importar todos os grupos do número vinculado.
             </p>
           )}
-          {grupos.map((g) => (
-            <div
-              key={g.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background/40 p-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">
-                  {g.grupo_nome || "Grupo sem nome"}
+          {(() => {
+            const termo = buscaGrupo.trim().toLowerCase();
+            const filtrados = grupos.filter((g) => {
+              if (filtroGrupo === "permitidos" && !g.permitido) return false;
+              if (filtroGrupo === "ignorados" && g.permitido) return false;
+              if (!termo) return true;
+              return (
+                (g.grupo_nome || "").toLowerCase().includes(termo) ||
+                g.grupo_jid.toLowerCase().includes(termo)
+              );
+            });
+            if (!carregandoGrupos && grupos.length > 0 && filtrados.length === 0) {
+              return (
+                <p className="rounded-lg border border-dashed border-border bg-background/40 p-4 text-xs text-muted-foreground">
+                  Nenhum grupo encontrado com esses filtros.
                 </p>
-                <p className="truncate font-mono text-[10px] text-muted-foreground">
-                  {g.grupo_jid}
-                </p>
-                <p className="mt-1 text-[10px] text-muted-foreground">
-                  Última mensagem: {new Date(g.ultima_mensagem_em).toLocaleString("pt-BR")}
-                </p>
+              );
+            }
+            return filtrados.map((g) => (
+              <div
+                key={g.id}
+                className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 ${
+                  g.permitido
+                    ? "border-ember/40 bg-ember/5"
+                    : "border-border bg-background/40"
+                }`}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-block size-2 rounded-full ${
+                        g.permitido ? "bg-ember" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                    <p className="truncate text-sm font-semibold">
+                      {g.grupo_nome || "Grupo sem nome"}
+                    </p>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                        g.permitido
+                          ? "bg-ember/20 text-ember"
+                          : "bg-muted/40 text-muted-foreground"
+                      }`}
+                    >
+                      {g.permitido ? "Triando" : "Ignorado"}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
+                    {g.grupo_jid}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await alternarGrupo({ data: { id: g.id, permitido: !g.permitido } });
+                      await recarregarGrupos();
+                    }}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
+                      g.permitido
+                        ? "border border-border bg-surface text-foreground hover:border-muted-foreground"
+                        : "bg-ember text-ember-foreground hover:brightness-110"
+                    }`}
+                  >
+                    {g.permitido ? "Ignorar" : "Aceitar"}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Remover grupo da lista"
+                    onClick={async () => {
+                      if (!confirm(`Remover "${g.grupo_nome || g.grupo_jid}" da lista?`)) return;
+                      await removerGrupoFn({ data: { id: g.id } });
+                      await recarregarGrupos();
+                    }}
+                    className="rounded-lg border border-border bg-surface p-2 text-muted-foreground hover:border-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await alternarGrupo({ data: { id: g.id, permitido: !g.permitido } });
-                    await recarregarGrupos();
-                  }}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
-                    g.permitido
-                      ? "bg-ember text-ember-foreground"
-                      : "border border-border bg-surface text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {g.permitido ? "Permitido" : "Ignorado"}
-                </button>
-                <button
-                  type="button"
-                  aria-label="Remover grupo da lista"
-                  onClick={async () => {
-                    if (!confirm(`Remover "${g.grupo_nome || g.grupo_jid}" da lista?`)) return;
-                    await removerGrupoFn({ data: { id: g.id } });
-                    await recarregarGrupos();
-                  }}
-                  className="rounded-lg border border-border bg-surface p-2 text-muted-foreground hover:border-destructive hover:text-destructive"
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
       </section>
 
