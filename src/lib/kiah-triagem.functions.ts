@@ -260,7 +260,7 @@ export const triarMensagem = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (resultado.ruido) {
-      return { ok: true, ruido: true, resultado, criados: 0 };
+      return { ok: true, ruido: true, resultado, criados: 0, provedor: usou };
     }
 
     let criados = 0;
@@ -292,5 +292,6 @@ export const triarMensagem = createServerFn({ method: "POST" })
       criados += linhas.length;
     }
 
-    return { ok: true, ruido: false, resultado, criados };
+    return { ok: true, ruido: false, resultado, criados, provedor: usou };
+
   });
