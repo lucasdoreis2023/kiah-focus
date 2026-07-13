@@ -297,6 +297,12 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const jid = d?.key?.remoteJid ?? "";
         const fromMe = d?.key?.fromMe === true;
         console.log("[kiah-webhook] jid=", jid, "fromMe=", fromMe, "messageType=", d?.messageType, "pushName=", d?.pushName);
+
+        // Grupos são bloqueados por completo — Kiah só processa conversas diretas.
+        if (ehJidGrupo(jid)) {
+          console.log("[kiah-webhook] IGNORADO mensagem de grupo", jid);
+          return json({ ok: true, ignorado: "grupo_bloqueado" });
+        }
         // fromMe pode ser válido no cenário self-chat (Kiah roda no mesmo número).
         // Filtramos abaixo só o eco das próprias respostas do bot.
 
