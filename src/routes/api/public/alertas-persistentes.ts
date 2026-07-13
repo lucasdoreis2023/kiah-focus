@@ -34,7 +34,9 @@ export const Route = createFileRoute("/api/public/alertas-persistentes")({
           .from("tarefas")
           .select("*")
           .eq("status", "pendente")
-          .not("user_id", "is", null);
+          .not("user_id", "is", null)
+          .not("prazo_estimado", "is", null)
+          .lte("prazo_estimado", agora.toISOString());
         if (error) return json({ ok: false, error: error.message }, 500);
 
         // Carregar donos → número de WhatsApp
@@ -53,19 +55,32 @@ export const Route = createFileRoute("/api/public/alertas-persistentes")({
         let enviados = 0;
         const detalhes: Array<{ id: string; motivo: string }> = [];
 
+        // Limite global de alertas por execução, evita rajada
+        const MAX_POR_EXECUCAO = 20;
+        // Máximo de re-alertas por tarefa (evita spam eterno)
+        const MAX_ALERTAS_POR_TAREFA = 8;
+
         for (const t of tarefas ?? []) {
+          if (enviados >= MAX_POR_EXECUCAO) break;
+
           const numero = numeroPorUsuario.get(t.user_id!);
           if (!numero) {
             detalhes.push({ id: t.id, motivo: "sem_whatsapp_vinculado" });
             continue;
           }
 
-          const cadenciaMin = t.cadencia_alerta_minutos ?? 60;
+          if ((t.adiamentos ?? 0) >= MAX_ALERTAS_POR_TAREFA) {
+            detalhes.push({ id: t.id, motivo: "max_alertas_atingido" });
+            continue;
+          }
+
+          const cadenciaMin = Math.max(t.cadencia_alerta_minutos ?? 60, 30);
           const ultimo = t.ultimo_alerta_em ? new Date(t.ultimo_alerta_em) : null;
           const minutosDesde = ultimo
             ? (agora.getTime() - ultimo.getTime()) / 60000
             : Infinity;
           if (minutosDesde < cadenciaMin) continue;
+
 
           const prazoTxt = t.prazo_estimado
             ? new Date(t.prazo_estimado).toLocaleString("pt-BR", {
