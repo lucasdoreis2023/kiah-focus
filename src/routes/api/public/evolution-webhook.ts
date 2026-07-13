@@ -89,6 +89,51 @@ async function tentarComando(
 
   const idCurto = (id: string) => id.slice(0, 6);
 
+  async function montarListaCompras(): Promise<string> {
+    const { data, error } = await supabaseAdmin
+      .from("itens_lista")
+      .select("id, descricao, categoria, created_at")
+      .eq("user_id", userId)
+      .eq("comprado", false)
+      .order("categoria", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) return `⚠️ Erro ao buscar lista: ${error.message}`;
+    if (!data || data.length === 0) return "🛒 Lista de compras vazia.";
+    const grupos = new Map<string, typeof data>();
+    for (const it of data) {
+      const cat = it.categoria || "Outros";
+      if (!grupos.has(cat)) grupos.set(cat, [] as any);
+      grupos.get(cat)!.push(it);
+    }
+    const linhas: string[] = [`🛒 Lista de compras (${data.length}):`];
+    for (const [cat, itens] of grupos) {
+      linhas.push(`\n*${cat}*`);
+      for (const it of itens) linhas.push(`• ${it.descricao}`);
+    }
+    linhas.push(`\n_Marque comprado: "comprei <item>"_`);
+    return linhas.join("\n");
+  }
+
+  async function montarTarefasPendentes(titulo = "Tarefas pendentes"): Promise<string> {
+    const { data, error } = await supabaseAdmin
+      .from("tarefas")
+      .select("id, descricao_limpa, prazo_estimado, tipo_demanda")
+      .eq("user_id", userId)
+      .eq("status", "pendente")
+      .order("prazo_estimado", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
+    if (error) return `⚠️ Erro: ${error.message}`;
+    if (!data || data.length === 0) return `📭 ${titulo}: nada pendente.`;
+    const linhas = data.map((r) => {
+      const ic =
+        r.tipo_demanda === "tarefa_urgente" ? "🔥" :
+        r.tipo_demanda === "academico" ? "📘" : "📝";
+      const prazo = r.prazo_estimado ? ` · 📅 ${formatarPrazoBRT(r.prazo_estimado)}` : "";
+      return `${ic} [${idCurto(r.id)}] ${r.descricao_limpa}${prazo}`;
+    });
+    return `📝 ${titulo} (${data.length}):\n${linhas.join("\n")}`;
+  }
+
   async function listarAgenda(inicioISO: string, fimISO: string, titulo: string) {
     const { data, error } = await supabaseAdmin
       .from("tarefas")
@@ -108,6 +153,16 @@ async function tentarComando(
       return `${ic} [${idCurto(r.id)}] ${formatarPrazoBRT(r.prazo_estimado)} — ${r.descricao_limpa}`;
     });
     return { tratado: true, resposta: `📅 ${titulo} (${data.length}):\n${linhas.join("\n")}` };
+  }
+
+  // lista / lista de compras / minha lista / compras / mercado
+  if (/^(lista(\s+de\s+compras)?|minha\s+lista|compras|mercado)\s*[!?.]?$/i.test(t)) {
+    return { tratado: true, resposta: await montarListaCompras() };
+  }
+
+  // tarefas / tarefas do dia / pendentes / o que tenho
+  if (/^(tarefas(\s+(do\s+dia|de\s+hoje|pendentes))?|pendentes|o\s+que\s+(tenho|falta)|minhas\s+tarefas)\s*[!?.]?$/i.test(t)) {
+    return { tratado: true, resposta: await montarTarefasPendentes() };
   }
 
   // hoje / agenda hoje
