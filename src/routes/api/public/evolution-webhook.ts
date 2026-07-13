@@ -320,7 +320,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
 
         const msg = d?.message ?? {};
         const texto = extrairTextoMensagem(msg);
-        const grupo = ehJidGrupo(jid);
+        // (grupos já foram descartados antes deste ponto)
         const numeroCadastradoKiah = normalizarNumeroCadastro(numeroKiah());
         const remetenteEhNumeroCadastrado = numeroRemetente === numeroCadastradoKiah;
 
