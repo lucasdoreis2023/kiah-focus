@@ -58,6 +58,8 @@ function PerfilPage() {
   const [feedback, setFeedback] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [carregandoGrupos, setCarregandoGrupos] = useState(false);
+  const [buscaGrupo, setBuscaGrupo] = useState("");
+  const [filtroGrupo, setFiltroGrupo] = useState<"todos" | "permitidos" | "ignorados">("todos");
 
   const qc = useQueryClient();
   const navigate = useNavigate();
