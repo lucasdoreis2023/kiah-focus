@@ -61,3 +61,31 @@ export async function baixarMidiaBase64(payloadMensagem: {
 export function jidParaNumero(jid: string): string {
   return jid.split("@")[0].replace(/\D/g, "");
 }
+
+/** Lista todos os grupos da instância Evolution vinculada. */
+export async function listarGruposEvolution(): Promise<
+  Array<{ id: string; subject?: string | null }>
+> {
+  const { url, key, instance } = baseConfig();
+  const resp = await fetch(
+    `${url}/group/fetchAllGroups/${instance}?getParticipants=false`,
+    { method: "GET", headers: { apikey: key } },
+  );
+  if (!resp.ok) {
+    const det = await resp.text();
+    throw new Error(`Evolution fetchAllGroups ${resp.status}: ${det.slice(0, 200)}`);
+  }
+  const json = (await resp.json()) as unknown;
+  const arr = Array.isArray(json)
+    ? json
+    : Array.isArray((json as { groups?: unknown[] })?.groups)
+      ? ((json as { groups: unknown[] }).groups)
+      : [];
+  return arr
+    .map((g) => {
+      const o = g as { id?: string; subject?: string | null };
+      return { id: String(o?.id ?? ""), subject: o?.subject ?? null };
+    })
+    .filter((g) => g.id.endsWith("@g.us"));
+}
+

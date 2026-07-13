@@ -13,7 +13,10 @@ import {
   listarMeusGrupos,
   alternarGrupoPermitido,
   removerGrupo,
+  sincronizarGruposEvolution,
 } from "@/lib/kiah-grupos.functions";
+import { RefreshCw } from "lucide-react";
+
 
 type Grupo = {
   id: string;
@@ -41,6 +44,11 @@ function PerfilPage() {
   const carregarGrupos = useServerFn(listarMeusGrupos);
   const alternarGrupo = useServerFn(alternarGrupoPermitido);
   const removerGrupoFn = useServerFn(removerGrupo);
+  const sincronizarGrupos = useServerFn(sincronizarGruposEvolution);
+
+  const [sincronizando, setSincronizando] = useState(false);
+  const [sincroMsg, setSincroMsg] = useState<string | null>(null);
+
 
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
@@ -229,10 +237,46 @@ function PerfilPage() {
           <h2 className="font-display text-lg font-bold">Grupos do WhatsApp</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Por padrão o Kiah <strong>ignora</strong> qualquer grupo. Aqui aparece a lista
-          dos grupos que já mandaram mensagem. Ative os grupos cuja triagem você quer
-          que o Kiah faça — o resto continua silenciado.
+          Por padrão o Kiah <strong>ignora</strong> qualquer grupo. Sincronize os
+          grupos do número vinculado e escolha quais devem passar pela triagem — os
+          demais continuam silenciados.
         </p>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={sincronizando}
+            onClick={async () => {
+              setSincroMsg(null);
+              setSincronizando(true);
+              try {
+                const r = await sincronizarGrupos({ data: undefined as never });
+                setSincroMsg(
+                  `Sincronizado: ${r.total} grupos (${r.novos} novos). Ative os que deseja triar.`,
+                );
+                await recarregarGrupos();
+              } catch (err) {
+                setSincroMsg(
+                  err instanceof Error ? err.message : "Falha ao sincronizar.",
+                );
+              } finally {
+                setSincronizando(false);
+              }
+            }}
+            className="inline-flex items-center gap-2 rounded-lg bg-ember px-3 py-2 text-xs font-bold text-ember-foreground hover:brightness-110 disabled:opacity-60"
+          >
+            {sincronizando ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="size-3.5" />
+            )}
+            Sincronizar grupos do WhatsApp
+          </button>
+          {sincroMsg && (
+            <span className="text-xs text-muted-foreground">{sincroMsg}</span>
+          )}
+        </div>
+
 
         <div className="mt-5 space-y-2">
           {carregandoGrupos && (

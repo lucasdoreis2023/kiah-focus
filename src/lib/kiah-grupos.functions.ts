@@ -46,3 +46,40 @@ export const removerGrupo = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const sincronizarGruposEvolution = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { listarGruposEvolution } = await import("@/lib/kiah-whatsapp.server");
+    const grupos = await listarGruposEvolution();
+    if (grupos.length === 0) return { ok: true, total: 0, novos: 0 };
+
+    const agora = new Date().toISOString();
+    const rows = grupos.map((g) => ({
+      user_id: context.userId,
+      grupo_jid: g.id,
+      grupo_nome: g.subject ?? null,
+      detectado_em: agora,
+      ultima_mensagem_em: agora,
+    }));
+
+    // Descobre quais já existiam para reportar "novos"
+    const { data: existentes } = await context.supabase
+      .from("grupos_whatsapp")
+      .select("grupo_jid")
+      .eq("user_id", context.userId)
+      .in("grupo_jid", rows.map((r) => r.grupo_jid));
+    const jaTinha = new Set((existentes ?? []).map((r) => r.grupo_jid));
+
+    const { error } = await context.supabase
+      .from("grupos_whatsapp")
+      .upsert(rows, { onConflict: "user_id,grupo_jid", ignoreDuplicates: false });
+    if (error) throw new Error(error.message);
+
+    return {
+      ok: true,
+      total: rows.length,
+      novos: rows.filter((r) => !jaTinha.has(r.grupo_jid)).length,
+    };
+  });
+
