@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, LogOut, Check, Loader2, MessageCircle, Trash2 } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { ArrowLeft, LogOut, Check, Loader2, MessageCircle, Trash2, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,20 @@ import {
   salvarMeuWhatsapp,
   removerMeuWhatsapp,
 } from "@/lib/kiah-perfil.functions";
+import {
+  listarMeusGrupos,
+  alternarGrupoPermitido,
+  removerGrupo,
+} from "@/lib/kiah-grupos.functions";
+
+type Grupo = {
+  id: string;
+  grupo_jid: string;
+  grupo_nome: string | null;
+  permitido: boolean;
+  detectado_em: string;
+  ultima_mensagem_em: string;
+};
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   head: () => ({
