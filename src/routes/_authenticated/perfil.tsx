@@ -13,7 +13,10 @@ import {
   listarMeusGrupos,
   alternarGrupoPermitido,
   removerGrupo,
+  sincronizarGruposEvolution,
 } from "@/lib/kiah-grupos.functions";
+import { RefreshCw } from "lucide-react";
+
 
 type Grupo = {
   id: string;
