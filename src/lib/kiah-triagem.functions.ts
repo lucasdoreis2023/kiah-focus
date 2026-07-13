@@ -81,7 +81,79 @@ Responda APENAS com JSON válido, sem markdown, sem \`\`\`json:
 }`;
 }
 
-async function chamarGemini(
+function extrairJson(conteudo: string): TriagemResultado {
+  try {
+    return JSON.parse(conteudo) as TriagemResultado;
+  } catch {
+    const match = conteudo.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error(`Modelo não retornou JSON: ${conteudo.slice(0, 200)}`);
+    return JSON.parse(match[0]) as TriagemResultado;
+  }
+}
+
+/** Chamada direta à API pública do Gemini (Google AI Studio) — custo zero no tier free. */
+async function chamarGeminiDireto(
+  apiKey: string,
+  partesUsuario: Array<Record<string, unknown>>,
+  modelo: string,
+): Promise<TriagemResultado> {
+  const systemPrompt = await construirPromptSistema();
+
+  // Converter "content parts" OpenAI-style -> "parts" nativos do Gemini
+  const parts: Array<Record<string, unknown>> = [];
+  for (const p of partesUsuario) {
+    if (p.type === "text") {
+      parts.push({ text: p.text as string });
+    } else if (p.type === "image_url") {
+      const url = (p.image_url as { url: string }).url;
+      const m = url.match(/^data:(.+?);base64,(.+)$/);
+      if (m) parts.push({ inline_data: { mime_type: m[1], data: m[2] } });
+    } else if (p.type === "input_audio") {
+      const audio = p.input_audio as { data: string; format: string };
+      const mime =
+        audio.format === "mp3"
+          ? "audio/mp3"
+          : audio.format === "wav"
+            ? "audio/wav"
+            : audio.format === "ogg"
+              ? "audio/ogg"
+              : audio.format === "aac"
+                ? "audio/aac"
+                : audio.format === "flac"
+                  ? "audio/flac"
+                  : audio.format === "m4a"
+                    ? "audio/mp4"
+                    : "audio/webm";
+      parts.push({ inline_data: { mime_type: mime, data: audio.data } });
+    }
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts }],
+      generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
+    }),
+  });
+
+  if (!resp.ok) {
+    const detalhe = await resp.text();
+    throw new Error(`Gemini direto ${resp.status}: ${detalhe.slice(0, 300)}`);
+  }
+
+  const json = (await resp.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  const conteudo = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+  if (!conteudo) throw new Error("Resposta vazia do Gemini direto.");
+  return extrairJson(conteudo);
+}
+
+/** Fallback: Lovable AI Gateway. */
+async function chamarGeminiGateway(
   apiKey: string,
   partesUsuario: Array<Record<string, unknown>>,
   modelo: string,
@@ -112,23 +184,18 @@ async function chamarGemini(
     choices?: Array<{ message?: { content?: string } }>;
   };
   const conteudo = json.choices?.[0]?.message?.content ?? "";
-  if (!conteudo) throw new Error("Resposta vazia do modelo.");
-
-  try {
-    return JSON.parse(conteudo) as TriagemResultado;
-  } catch {
-    // Fallback: tentar extrair bloco JSON
-    const match = conteudo.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error(`Modelo não retornou JSON: ${conteudo.slice(0, 200)}`);
-    return JSON.parse(match[0]) as TriagemResultado;
-  }
+  if (!conteudo) throw new Error("Resposta vazia do modelo (gateway).");
+  return extrairJson(conteudo);
 }
 
 export const triarMensagem = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY ausente no servidor.");
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    if (!geminiKey && !lovableKey) {
+      throw new Error("Nenhuma chave de IA configurada (GEMINI_API_KEY / LOVABLE_API_KEY).");
+    }
 
     // Montar os "content parts" do usuário conforme a modalidade recebida
     const partes: Array<Record<string, unknown>> = [];
@@ -168,18 +235,32 @@ export const triarMensagem = createServerFn({ method: "POST" })
       throw new Error("Nada para triar: envie texto, imagem ou áudio.");
     }
 
-    // Áudio precisa de modelo com input de áudio (gpt-5-mini suporta); demais Gemini Flash
-    const modelo = data.audio_base64
-      ? "openai/gpt-5-mini"
-      : "google/gemini-2.5-flash";
+    // Gemini nativo aceita texto, imagem e áudio no mesmo modelo (gemini-2.5-flash).
+    // Fallback: gateway Lovable (gpt-5-mini para áudio, gemini-2.5-flash caso contrário).
+    let resultado: TriagemResultado;
+    let usou: "gemini_direto" | "lovable_gateway" = "gemini_direto";
+    try {
+      if (!geminiKey) throw new Error("sem GEMINI_API_KEY");
+      resultado = await chamarGeminiDireto(geminiKey, partes, "gemini-2.5-flash");
+    } catch (err) {
+      if (!lovableKey) throw err;
+      console.warn(
+        "[triagem] Gemini direto falhou, caindo para gateway Lovable:",
+        err instanceof Error ? err.message : err,
+      );
+      const modeloFallback = data.audio_base64
+        ? "openai/gpt-5-mini"
+        : "google/gemini-2.5-flash";
+      resultado = await chamarGeminiGateway(lovableKey, partes, modeloFallback);
+      usou = "lovable_gateway";
+    }
 
-    const resultado = await chamarGemini(apiKey, partes, modelo);
 
     // Persistir — usa cliente admin (permite user_id explícito).
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (resultado.ruido) {
-      return { ok: true, ruido: true, resultado, criados: 0 };
+      return { ok: true, ruido: true, resultado, criados: 0, provedor: usou };
     }
 
     let criados = 0;
@@ -211,5 +292,6 @@ export const triarMensagem = createServerFn({ method: "POST" })
       criados += linhas.length;
     }
 
-    return { ok: true, ruido: false, resultado, criados };
+    return { ok: true, ruido: false, resultado, criados, provedor: usou };
+
   });
