@@ -342,7 +342,7 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         let userId: string | null = null;
         let numeroResposta = "";
 
-        if (grupo || !fromMe || remetenteEhNumeroCadastrado) {
+        if (!fromMe || remetenteEhNumeroCadastrado) {
           const donoNumeroCadastrado = await perfilPorNumero(numeroCadastradoKiah);
           if (donoNumeroCadastrado?.id) {
             userId = donoNumeroCadastrado.id;
