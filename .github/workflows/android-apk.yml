@@ -11,38 +11,58 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - uses: actions/setup-java@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-      - name: Install web dependencies
-        run: npm install
-      - name: Build web app
-        run: npm run build
-      - name: Install Capacitor
-        run: npm install --no-save @capacitor/core @capacitor/cli @capacitor/android
-      - name: Create Android project
+
+      - name: Create Capacitor wrapper
         shell: bash
         run: |
-          WEB_DIR=''; for dir in dist dist/client .output/public .output; do if [ -f "$dir/index.html" ]; then WEB_DIR="$dir"; break; fi; done; if [ -z "$WEB_DIR" ]; then echo 'Web build output with index.html was not found.'; exit 1; fi
-          cat > capacitor.config.ts <<EOF
+          mkdir android-wrapper
+          cd android-wrapper
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          mkdir web
+          printf '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kiah</title></head><body></body></html>' > web/index.html
+          cat > capacitor.config.ts <<'EOF'
           import type { CapacitorConfig } from '@capacitor/cli';
-          const config: CapacitorConfig = { appId: 'app.lovable.kiahfocus', appName: 'Kiah Focus', webDir: '$WEB_DIR' };
+
+          const config: CapacitorConfig = {
+            appId: 'com.konectai.kiah',
+            appName: 'Kiah',
+            webDir: 'web',
+            server: {
+              url: 'https://focus.konecta-i.com',
+              cleartext: false,
+              allowNavigation: ['focus.konecta-i.com'],
+            },
+          };
+
           export default config;
           EOF
           npx cap add android
           npx cap sync android
+
       - name: Build debug APK
-        working-directory: android
+        working-directory: android-wrapper/android
         run: ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          name: kiah-focus-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: kiah-android-apk
+          path: android-wrapper/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 30
