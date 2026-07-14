@@ -602,87 +602,20 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
             },
           });
 
-          const partes: string[] = [];
-          if (res.ruido) {
-            // Silêncio: não poluir o zap com "nada acionável".
-            return json({ ...res, ok: true, silenciado: true });
-          } else {
-            const itens = res.resultado.itens_compra ?? [];
-            const tarefas = res.resultado.tarefas ?? [];
-            if (itens.length) {
-              partes.push(
-                `✅ +${itens.length} na lista: ${itens.map((i) => i.descricao).join(", ")}`,
-              );
-            }
-            if (tarefas.length) {
-              // Buscar IDs recém-criados para exibir prefixo curto + prazo formatado
-              const { formatarPrazoBRT } = await import("@/lib/kiah-datas.server");
-              const descricoes = tarefas.map((t) => t.descricao_limpa);
-              const desde = new Date(Date.now() - 60_000).toISOString();
-              const { data: recentes } = await supabaseAdmin
-                .from("tarefas")
-                .select("id, descricao_limpa, prazo_estimado, tipo_demanda")
-                .eq("user_id", userId)
-                .in("descricao_limpa", descricoes)
-                .gte("created_at", desde)
-                .order("created_at", { ascending: false });
-              const mapa = new Map<string, { id: string; prazo: string | null; tipo: string }>();
-              for (const r of recentes ?? []) {
-                if (!mapa.has(r.descricao_limpa))
-                  mapa.set(r.descricao_limpa, { id: r.id, prazo: r.prazo_estimado, tipo: r.tipo_demanda });
-              }
-              for (const t of tarefas) {
-                const info = mapa.get(t.descricao_limpa);
-                const icone =
-                  t.tipo === "tarefa_urgente" ? "🔥 URGENTE" :
-                  t.tipo === "academico" ? "📘 Acadêmica" : "📝 Tarefa";
-                const idCurto = info ? ` [${info.id.slice(0, 6)}]` : "";
-                const prazoTxt = info?.prazo ? ` · 📅 ${formatarPrazoBRT(info.prazo)}` : "";
-                partes.push(`${icone}${idCurto}: ${t.descricao_limpa}${prazoTxt}`);
-              }
-            }
-            // Nada extraído e sem flag de ruído: silenciar também.
-            if (!partes.length) {
-              return json({ ...res, ok: true, silenciado: true });
-            }
-
-
-            // Sempre que houver item de compra novo, mandar a lista completa atualizada.
-            if (itens.length) {
-              const { data: pendentes } = await supabaseAdmin
-                .from("itens_lista")
-                .select("descricao, categoria, created_at")
-                .eq("user_id", userId)
-                .eq("comprado", false)
-                .order("categoria", { ascending: true })
-                .order("created_at", { ascending: true });
-              if (pendentes && pendentes.length) {
-                const grupos = new Map<string, typeof pendentes>();
-                for (const it of pendentes) {
-                  const cat = it.categoria || "Outros";
-                  if (!grupos.has(cat)) grupos.set(cat, [] as any);
-                  grupos.get(cat)!.push(it);
-                }
-                const bloco: string[] = [`\n🛒 Lista atualizada (${pendentes.length}):`];
-                for (const [cat, arr] of grupos) {
-                  bloco.push(`\n*${cat}*`);
-                  for (const it of arr) bloco.push(`• ${it.descricao}`);
-                }
-                partes.push(bloco.join("\n"));
-              }
-            }
-          }
-          const resumo = partes.join("\n");
-
-          await responderDono(resumo);
-
-          return json({ ...res, ok: true });
+          // Silêncio absoluto no WhatsApp após triagem:
+          // - Ruído: nunca avisar.
+          // - Tarefas/itens criados: só aparecem no app; WhatsApp só recebe
+          //   alertas ativos (D-1, D-0 08:00 BRT, pós-vencimento) via cron.
+          // - Lista de compras: consolidada é enviada só na data agendada
+          //   (pelo cron/comando "lista"), nunca item a item.
+          return json({ ...res, ok: true, silenciado: true });
         } catch (e) {
           const msgErr = e instanceof Error ? e.message : String(e);
           console.error("[kiah-webhook] triagem falhou", msgErr);
           // Silenciar erros de triagem no WhatsApp — evita ruído.
           return json({ ok: false, error: msgErr, silenciado: true }, 200);
         }
+
       },
 
     },
