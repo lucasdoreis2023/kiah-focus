@@ -21,7 +21,9 @@ import {
   User,
   CircleDot,
   MessageCircle,
+  Inbox,
 } from "lucide-react";
+
 
 import { triarMensagem } from "@/lib/kiah-triagem.functions";
 import { reivindicarDadosOrfaos } from "@/lib/kiah-auth.functions";
