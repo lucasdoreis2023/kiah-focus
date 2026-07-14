@@ -55,6 +55,7 @@ export type Database = {
           categoria: string
           comprado: boolean
           comprado_em: string | null
+          confirmado: boolean
           created_at: string
           descricao: string
           expira_em: string | null
@@ -69,6 +70,7 @@ export type Database = {
           categoria?: string
           comprado?: boolean
           comprado_em?: string | null
+          confirmado?: boolean
           created_at?: string
           descricao: string
           expira_em?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           categoria?: string
           comprado?: boolean
           comprado_em?: string | null
+          confirmado?: boolean
           created_at?: string
           descricao?: string
           expira_em?: string | null
@@ -160,6 +163,7 @@ export type Database = {
           adiamentos: number
           cadencia_alerta_minutos: number
           concluida_em: string | null
+          confirmado: boolean
           contexto: Json | null
           created_at: string
           descricao_limpa: string
@@ -176,6 +180,7 @@ export type Database = {
           adiamentos?: number
           cadencia_alerta_minutos?: number
           concluida_em?: string | null
+          confirmado?: boolean
           contexto?: Json | null
           created_at?: string
           descricao_limpa: string
@@ -192,6 +197,7 @@ export type Database = {
           adiamentos?: number
           cadencia_alerta_minutos?: number
           concluida_em?: string | null
+          confirmado?: boolean
           contexto?: Json | null
           created_at?: string
           descricao_limpa?: string

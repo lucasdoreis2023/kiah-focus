@@ -9,6 +9,7 @@ export const tarefasPendentesQuery = queryOptions({
       .from("tarefas")
       .select("*")
       .eq("status", "pendente")
+      .eq("confirmado", true)
       .order("prazo_estimado", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true });
     if (error) throw error;
@@ -23,6 +24,7 @@ export const itensListaQuery = queryOptions({
       .from("itens_lista")
       .select("*")
       .eq("comprado", false)
+      .eq("confirmado", true)
       .order("categoria", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw error;
@@ -30,8 +32,81 @@ export const itensListaQuery = queryOptions({
   },
 });
 
+/* ---------------- Caixa de entrada (aguardando confirmação) ---------------- */
+
+export const inboxTarefasQuery = queryOptions({
+  queryKey: ["tarefas", "inbox"],
+  queryFn: async (): Promise<Tarefa[]> => {
+    const { data, error } = await supabase
+      .from("tarefas")
+      .select("*")
+      .eq("status", "pendente")
+      .eq("confirmado", false)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+});
+
+export const inboxItensQuery = queryOptions({
+  queryKey: ["itens_lista", "inbox"],
+  queryFn: async (): Promise<ItemLista[]> => {
+    const { data, error } = await supabase
+      .from("itens_lista")
+      .select("*")
+      .eq("comprado", false)
+      .eq("confirmado", false)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+});
+
+export async function confirmarTarefa(id: string) {
+  const { error } = await supabase.from("tarefas").update({ confirmado: true }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function confirmarTarefas(ids: string[]) {
+  if (!ids.length) return;
+  const { error } = await supabase.from("tarefas").update({ confirmado: true }).in("id", ids);
+  if (error) throw error;
+}
+
+export async function confirmarTodasTarefasInbox() {
+  const { error } = await supabase
+    .from("tarefas")
+    .update({ confirmado: true })
+    .eq("confirmado", false)
+    .eq("status", "pendente");
+  if (error) throw error;
+}
+
+export async function confirmarItem(id: string) {
+  const { error } = await supabase.from("itens_lista").update({ confirmado: true }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function confirmarItens(ids: string[]) {
+  if (!ids.length) return;
+  const { error } = await supabase.from("itens_lista").update({ confirmado: true }).in("id", ids);
+  if (error) throw error;
+}
+
+export async function confirmarTodosItensInbox() {
+  const { error } = await supabase
+    .from("itens_lista")
+    .update({ confirmado: true })
+    .eq("confirmado", false)
+    .eq("comprado", false);
+  if (error) throw error;
+}
+
+/* ---------------- Criação / mutações ---------------- */
+
 export async function criarTarefa(input: TarefaInsert) {
-  const { error } = await supabase.from("tarefas").insert(input);
+  // Criação manual pelo app já entra confirmada.
+  const { error } = await supabase.from("tarefas").insert({ confirmado: true, ...input });
   if (error) throw error;
 }
 
@@ -66,7 +141,7 @@ export async function descartarTarefa(id: string) {
 }
 
 export async function criarItemLista(input: ItemListaInsert) {
-  const { error } = await supabase.from("itens_lista").insert(input);
+  const { error } = await supabase.from("itens_lista").insert({ confirmado: true, ...input });
   if (error) throw error;
 }
 

@@ -21,7 +21,9 @@ import {
   User,
   CircleDot,
   MessageCircle,
+  Inbox,
 } from "lucide-react";
+
 
 import { triarMensagem } from "@/lib/kiah-triagem.functions";
 import { reivindicarDadosOrfaos } from "@/lib/kiah-auth.functions";
@@ -213,10 +215,12 @@ function PainelKiah() {
 function SidebarKiah() {
   const itens = [
     { to: "/", label: "Hoje", icon: <CircleDot className="size-4" />, exact: true },
+    { to: "/caixa-entrada", label: "Caixa de entrada", icon: <Inbox className="size-4" />, exact: false },
     { to: "/agenda", label: "Agenda", icon: <CalendarDays className="size-4" />, exact: false },
     { to: "/lista", label: "Lista", icon: <ShoppingBasket className="size-4" />, exact: false },
     { to: "/historico", label: "Histórico", icon: <History className="size-4" />, exact: false },
   ] as const;
+
   return (
     <aside className="hidden w-[220px] shrink-0 flex-col border-r border-border bg-background md:flex">
       <div className="p-6 pb-4">
