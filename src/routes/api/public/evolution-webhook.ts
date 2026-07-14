@@ -527,6 +527,26 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           }
         }
 
+        // ─── Diálogos com terceiros: NÃO triar mensagem a mensagem. ───
+        // Bufferiza o texto; um cron varre conversas ociosas (>5 min sem
+        // nova mensagem) e roda a triagem no diálogo inteiro, procurando
+        // apenas o que ficou pendente para o dono.
+        if (!remetenteEhNumeroCadastrado && !ehJidGrupo(jid)) {
+          if (!texto) {
+            return json({ ok: true, ignorado: "midia_em_dialogo_terceiro" });
+          }
+          await supabaseAdmin.from("mensagens_dialogo").insert({
+            user_id: userId,
+            jid,
+            from_me: fromMe,
+            push_name: d?.pushName ?? null,
+            texto,
+          });
+          console.log("[kiah-webhook] mensagem bufferizada de diálogo jid=", jid);
+          return json({ ok: true, bufferizado: true });
+        }
+
+
         let imagem_base64: string | undefined;
         let imagem_mime: string | undefined;
         let audio_base64: string | undefined;
