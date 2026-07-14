@@ -95,6 +95,39 @@ export type Database = {
         }
         Relationships: []
       }
+      mensagens_dialogo: {
+        Row: {
+          criado_em: string
+          from_me: boolean
+          id: string
+          jid: string
+          processado_em: string | null
+          push_name: string | null
+          texto: string
+          user_id: string
+        }
+        Insert: {
+          criado_em?: string
+          from_me?: boolean
+          id?: string
+          jid: string
+          processado_em?: string | null
+          push_name?: string | null
+          texto: string
+          user_id: string
+        }
+        Update: {
+          criado_em?: string
+          from_me?: boolean
+          id?: string
+          jid?: string
+          processado_em?: string | null
+          push_name?: string | null
+          texto?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
