@@ -584,7 +584,8 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
 
           const partes: string[] = [];
           if (res.ruido) {
-            partes.push("🫧 Recebi, mas nada acionável — arquivado como ruído.");
+            // Silêncio: não poluir o zap com "nada acionável".
+            return json({ ...res, ok: true, silenciado: true });
           } else {
             const itens = res.resultado.itens_compra ?? [];
             const tarefas = res.resultado.tarefas ?? [];
@@ -620,7 +621,11 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
                 partes.push(`${icone}${idCurto}: ${t.descricao_limpa}${prazoTxt}`);
               }
             }
-            if (!partes.length) partes.push("✓ Recebido.");
+            // Nada extraído e sem flag de ruído: silenciar também.
+            if (!partes.length) {
+              return json({ ...res, ok: true, silenciado: true });
+            }
+
 
             // Sempre que houver item de compra novo, mandar a lista completa atualizada.
             if (itens.length) {
@@ -655,13 +660,11 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         } catch (e) {
           const msgErr = e instanceof Error ? e.message : String(e);
           console.error("[kiah-webhook] triagem falhou", msgErr);
-          await responderDono(
-            `⚠️ Kiah recebeu mas travou na triagem: ${msgErr.slice(0, 140)}`,
-          );
-
-          return json({ ok: false, error: msgErr }, 200);
+          // Silenciar erros de triagem no WhatsApp — evita ruído.
+          return json({ ok: false, error: msgErr, silenciado: true }, 200);
         }
       },
+
     },
   },
 });
