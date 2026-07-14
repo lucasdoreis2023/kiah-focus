@@ -184,8 +184,102 @@ export const Route = createFileRoute("/api/public/alertas-persistentes")({
           }
         }
 
-        return json({ ok: true, verificadas: tarefas?.length ?? 0, enviados, detalhes });
+        // ─── Varredura de diálogos ociosos ───
+        // Junta mensagens não processadas por (user_id, jid) cuja última
+        // atividade foi há > 5 min e envia o transcript para triagem
+        // buscando apenas o que ficou pendente para o dono.
+        const dialogosProcessados: Array<{ jid: string; msgs: number; extraiu: number }> = [];
+        try {
+          const { data: pendentes } = await supabaseAdmin
+            .from("mensagens_dialogo")
+            .select("id, user_id, jid, from_me, push_name, texto, criado_em")
+            .is("processado_em", null)
+            .order("criado_em", { ascending: true })
+            .limit(500);
+
+          const OCIOSO_MIN = 5;
+          const limite = new Date(agora.getTime() - OCIOSO_MIN * 60_000);
+
+          const grupos = new Map<string, typeof pendentes>();
+          for (const m of pendentes ?? []) {
+            const k = `${m.user_id}::${m.jid}`;
+            if (!grupos.has(k)) grupos.set(k, [] as never);
+            grupos.get(k)!.push(m);
+          }
+
+          for (const [, msgs] of grupos) {
+            if (!msgs || msgs.length === 0) continue;
+            const ultima = new Date(msgs[msgs.length - 1].criado_em);
+            if (ultima > limite) continue; // ainda ativo, aguarda
+
+            const userId = msgs[0].user_id;
+            const jid = msgs[0].jid;
+            const nome = msgs.find((m) => m.push_name)?.push_name ?? "contato";
+            const transcript = msgs
+              .map((m) => `${m.from_me ? "Eu" : nome}: ${m.texto}`)
+              .join("\n");
+
+            const contexto = `Segue um diálogo de WhatsApp entre o dono ("Eu") e um contato ("${nome}"). Analise a CONVERSA INTEIRA e extraia SOMENTE o que ficou PENDENTE PARA O DONO fazer, lembrar ou comprar como consequência deste diálogo. Ignore saudações, respostas curtas, assuntos resolvidos, promessas do contato, e tudo que não gere ação para o dono. Se nada ficou pendente para o dono, retorne ruido=true.\n\n=== DIÁLOGO ===\n${transcript}\n=== FIM ===`;
+
+            let extraiu = 0;
+            try {
+              const { triarMensagem } = await import("@/lib/kiah-triagem.functions");
+              const res = await triarMensagem({
+                data: {
+                  texto: contexto,
+                  origem: "whatsapp_terceiros",
+                  user_id: userId,
+                },
+              });
+              extraiu =
+                (res.resultado?.tarefas?.length ?? 0) +
+                (res.resultado?.itens_compra?.length ?? 0);
+
+              if (extraiu > 0) {
+                const numero = numeroPorUsuario.get(userId);
+                if (numero) {
+                  const partes: string[] = [
+                    `💬 Pendências detectadas na conversa com ${nome}:`,
+                  ];
+                  for (const t of res.resultado.tarefas ?? []) {
+                    partes.push(`📝 ${t.descricao_limpa}`);
+                  }
+                  if ((res.resultado.itens_compra ?? []).length) {
+                    partes.push(
+                      `🛒 ${(res.resultado.itens_compra ?? []).map((i) => i.descricao).join(", ")}`,
+                    );
+                  }
+                  try {
+                    await enviarWhatsApp(partes.join("\n"), numero);
+                  } catch (e) {
+                    console.error("[dialogo] envio falhou", e);
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("[dialogo] triagem falhou", e);
+            }
+
+            const ids = msgs.map((m) => m.id);
+            await supabaseAdmin
+              .from("mensagens_dialogo")
+              .update({ processado_em: agora.toISOString() })
+              .in("id", ids);
+            dialogosProcessados.push({ jid, msgs: msgs.length, extraiu });
+          }
+        } catch (e) {
+          console.error("[dialogo] varredura falhou", e);
+        }
+
+        return json({
+          ok: true,
+          verificadas: tarefas?.length ?? 0,
+          enviados,
+          detalhes,
+          dialogos: dialogosProcessados,
+        });
       },
     },
   },
 });
+
