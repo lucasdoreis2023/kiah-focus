@@ -30,7 +30,7 @@ jobs:
       - name: Create Android project
         shell: bash
         run: |
-          if [ -d .output/public ]; then WEB_DIR=.output/public; elif [ -d dist ]; then WEB_DIR=dist; else echo 'Web build output was not found.'; exit 1; fi
+          WEB_DIR=''; for dir in dist dist/client .output/public .output; do if [ -f "$dir/index.html" ]; then WEB_DIR="$dir"; break; fi; done; if [ -z "$WEB_DIR" ]; then echo 'Web build output with index.html was not found.'; exit 1; fi
           cat > capacitor.config.ts <<EOF
           import type { CapacitorConfig } from '@capacitor/cli';
           const config: CapacitorConfig = { appId: 'app.lovable.kiahfocus', appName: 'Kiah Focus', webDir: '$WEB_DIR' };
