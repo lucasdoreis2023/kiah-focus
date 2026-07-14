@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedListaRouteImport } from './routes/_authenticated/lista'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
+import { Route as AuthenticatedCaixaEntradaRouteImport } from './routes/_authenticated/caixa-entrada'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as ApiPublicEvolutionWebhookRouteImport } from './routes/api/public/evolution-webhook'
 import { Route as ApiPublicAlertasPersistentesRouteImport } from './routes/api/public/alertas-persistentes'
@@ -48,6 +49,12 @@ const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
   path: '/historico',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCaixaEntradaRoute =
+  AuthenticatedCaixaEntradaRouteImport.update({
+    id: '/caixa-entrada',
+    path: '/caixa-entrada',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/caixa-entrada': typeof AuthenticatedCaixaEntradaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/lista': typeof AuthenticatedListaRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -79,6 +87,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/caixa-entrada': typeof AuthenticatedCaixaEntradaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/lista': typeof AuthenticatedListaRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -91,6 +100,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
+  '/_authenticated/caixa-entrada': typeof AuthenticatedCaixaEntradaRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/lista': typeof AuthenticatedListaRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/agenda'
+    | '/caixa-entrada'
     | '/historico'
     | '/lista'
     | '/perfil'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/agenda'
+    | '/caixa-entrada'
     | '/historico'
     | '/lista'
     | '/perfil'
@@ -124,6 +136,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/agenda'
+    | '/_authenticated/caixa-entrada'
     | '/_authenticated/historico'
     | '/_authenticated/lista'
     | '/_authenticated/perfil'
@@ -183,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/caixa-entrada': {
+      id: '/_authenticated/caixa-entrada'
+      path: '/caixa-entrada'
+      fullPath: '/caixa-entrada'
+      preLoaderRoute: typeof AuthenticatedCaixaEntradaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/agenda': {
       id: '/_authenticated/agenda'
       path: '/agenda'
@@ -209,6 +229,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
+  AuthenticatedCaixaEntradaRoute: typeof AuthenticatedCaixaEntradaRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedListaRoute: typeof AuthenticatedListaRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
@@ -217,6 +238,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
+  AuthenticatedCaixaEntradaRoute: AuthenticatedCaixaEntradaRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedListaRoute: AuthenticatedListaRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
