@@ -36,21 +36,17 @@ jobs:
           npm install @capacitor/core @capacitor/cli @capacitor/android
           mkdir web
           printf '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kiah</title></head><body></body></html>' > web/index.html
-          cat > capacitor.config.ts <<'EOF'
-          import type { CapacitorConfig } from '@capacitor/cli';
-
-          const config: CapacitorConfig = {
-            appId: 'com.konectai.kiah',
-            appName: 'Kiah',
-            webDir: 'web',
-            server: {
-              url: 'https://focus.konecta-i.com',
-              cleartext: false,
-              allowNavigation: ['focus.konecta-i.com'],
-            },
-          };
-
-          export default config;
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.konectai.kiah",
+            "appName": "Kiah",
+            "webDir": "web",
+            "server": {
+              "url": "https://focus.konecta-i.com",
+              "cleartext": false,
+              "allowNavigation": ["focus.konecta-i.com"]
+            }
+          }
           EOF
           npx cap add android
           npx cap sync android
