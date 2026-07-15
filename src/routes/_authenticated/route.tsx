@@ -5,11 +5,14 @@ import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
+    // getSession() lê do storage local (sem network) — muito mais rápido
+    // que getUser() em cada navegação. O token é validado no servidor
+    // quando as server functions rodam via requireSupabaseAuth.
+    const { data } = await supabase.auth.getSession();
+    if (!data.session?.user) {
       throw redirect({ to: "/auth" });
     }
-    return { user: data.user };
+    return { user: data.session.user };
   },
   component: AuthenticatedLayout,
 });
