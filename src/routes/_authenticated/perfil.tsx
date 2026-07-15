@@ -1,6 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, LogOut, Check, Loader2, MessageCircle, Trash2, Users } from "lucide-react";
+import { LogOut, Check, Loader2, MessageCircle, Trash2, Users, UserCircle2 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,10 +142,21 @@ function PerfilPage() {
 
   return (
     <div className="mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Voltar
-      </Link>
-      <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Perfil</h1>
+      <PageHeader
+        icon={UserCircle2}
+        title="Perfil"
+        subtitle="Sua conta, WhatsApp e grupos de triagem."
+        action={
+          <button
+            type="button"
+            onClick={sair}
+            className="btn-ghost hidden sm:inline-flex"
+            title="Sair"
+          >
+            <LogOut className="size-4" /> Sair
+          </button>
+        }
+      />
 
       <div className="mt-8 space-y-4 rounded-xl border border-border bg-surface/40 p-6">
         <Campo label="Nome" valor={nome || "—"} />
