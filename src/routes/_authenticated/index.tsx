@@ -598,7 +598,7 @@ function BotaoSair() {
   return (
     <button
       onClick={sair}
-      className="grid size-9 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+      className="grid size-10 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground sm:size-9"
       aria-label="Sair"
       title="Sair"
     >
