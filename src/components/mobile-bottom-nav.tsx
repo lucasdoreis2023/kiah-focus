@@ -30,6 +30,7 @@ export function MobileBottomNav() {
               <Link
                 to={it.to}
                 activeOptions={{ exact: it.exact }}
+                preload="intent"
                 className="group relative flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-semibold text-muted-foreground transition-colors duration-200 hover:text-foreground data-[status=active]:text-ember"
               >
                 {/* barra ember superior no ativo */}
