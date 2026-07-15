@@ -648,11 +648,11 @@ function NovaTarefaBotao() {
               placeholder="Ex: Lançar frequência do 9º ano"
               className="w-full rounded-lg bg-input px-3 py-2.5 text-sm outline-none ring-ring focus:ring-2"
             />
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <select
                 value={tipo}
                 onChange={(e) => setTipo(e.target.value as TipoDemanda)}
-                className="flex-1 rounded-lg bg-input px-3 py-2.5 text-sm"
+                className="w-full rounded-lg bg-input px-3 py-2.5 text-sm"
               >
                 {TIPOS_TAREFA.filter((t) => t.value !== "lista_compras").map((t) => (
                   <option key={t.value} value={t.value}>
@@ -664,7 +664,7 @@ function NovaTarefaBotao() {
                 type="datetime-local"
                 value={prazo}
                 onChange={(e) => setPrazo(e.target.value)}
-                className="flex-1 rounded-lg bg-input px-3 py-2.5 text-sm"
+                className="w-full rounded-lg bg-input px-3 py-2.5 text-sm"
               />
             </div>
             <button
