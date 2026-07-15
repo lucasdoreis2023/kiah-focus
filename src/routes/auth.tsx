@@ -48,8 +48,6 @@ function AuthPage() {
         setErro(res.error.message || "Falha ao entrar com o Google.");
         setCarregando(false);
       }
-      // Se res.redirected === true, o navegador troca de página.
-      // Se veio tokens (preview iframe), o onAuthStateChange redireciona.
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha inesperada.");
       setCarregando(false);
@@ -57,25 +55,32 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 bg-background">
-      <div className="w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-10">
+      {/* glow ambiental */}
+      <div className="pointer-events-none absolute -top-40 right-1/4 size-96 rounded-full bg-ember/20 blur-[140px]" />
+      <div className="pointer-events-none absolute -bottom-40 left-1/4 size-96 rounded-full bg-ember/10 blur-[160px]" />
+
+      <div className="relative w-full max-w-sm animate-fade-in">
         <div className="text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+          <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-ember/15 text-ember ring-1 ring-ember/30 ember-pulse">
+            <Sparkles className="size-6" />
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-muted-foreground">
             Segundo cérebro
           </p>
-          <h1 className="mt-2 text-4xl font-semibold flex items-center justify-center gap-2">
-            <Sparkles className="size-6 text-primary" /> Kiah
+          <h1 className="mt-2 font-display text-5xl font-extrabold tracking-tight text-foreground">
+            Kiah
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
             Entre para acessar suas tarefas, alertas e lista de compras.
           </p>
         </div>
 
-        <div className="mt-8 rounded-2xl bg-surface p-6 shadow-focus">
+        <div className="mt-8 rounded-2xl border border-border/80 bg-card/80 p-6 shadow-focus backdrop-blur">
           <button
             onClick={entrarComGoogle}
             disabled={carregando}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-ember px-4 py-3.5 text-sm font-bold text-ember-foreground shadow-ember transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
           >
             {carregando ? (
               <>
@@ -88,11 +93,11 @@ function AuthPage() {
             )}
           </button>
           {erro && (
-            <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-xs text-destructive-foreground/90">
+            <p className="mt-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {erro}
             </p>
           )}
-          <p className="mt-4 text-center text-xs text-muted-foreground/70">
+          <p className="mt-5 text-center text-xs text-muted-foreground/70">
             Só você tem acesso ao seu Segundo Cérebro.
           </p>
         </div>

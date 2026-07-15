@@ -222,36 +222,45 @@ function SidebarKiah() {
   ] as const;
 
   return (
-    <aside className="hidden w-[220px] shrink-0 flex-col border-r border-border bg-background md:flex">
-      <div className="p-6 pb-4">
-        <Link to="/" className="block">
-          <h1 className="font-display text-2xl font-extrabold tracking-tight text-ember">
-            KIAH
-          </h1>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+    <aside className="hidden w-[232px] shrink-0 flex-col border-r border-border/70 bg-background/60 backdrop-blur md:flex">
+      <div className="p-6 pb-5">
+        <Link to="/" className="group block">
+          <div className="flex items-center gap-2">
+            <span className="grid size-8 place-items-center rounded-lg bg-ember/15 text-ember ring-1 ring-ember/30 transition-all group-hover:bg-ember/25">
+              <Sparkles className="size-4" />
+            </span>
+            <h1 className="font-display text-2xl font-extrabold tracking-tight text-ember">
+              KIAH
+            </h1>
+          </div>
+          <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
             Segundo cérebro
           </p>
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="flex-1 space-y-0.5 px-3">
         {itens.map((it) => (
           <Link
             key={it.label}
             to={it.to}
             activeOptions={{ exact: it.exact }}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground data-[status=active]:border data-[status=active]:border-border/60 data-[status=active]:bg-surface data-[status=active]:text-ember"
+            className="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-all duration-200 hover:bg-surface/70 hover:text-foreground data-[status=active]:bg-surface data-[status=active]:text-ember"
           >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-ember opacity-0 transition-opacity duration-200 group-data-[status=active]:opacity-100"
+            />
             {it.icon}
             <span className="font-medium">{it.label}</span>
           </Link>
         ))}
       </nav>
 
-      <div className="border-t border-border p-4">
+      <div className="border-t border-border/70 p-4">
         <Link
           to="/perfil"
-          className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground data-[status=active]:text-ember"
+          className="flex items-center gap-3 rounded-lg p-2 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-foreground data-[status=active]:text-ember"
         >
           <div className="grid size-8 shrink-0 place-items-center rounded-full border border-border bg-surface">
             <User className="size-4" />
@@ -957,18 +966,20 @@ function Modal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-black/70 p-0 backdrop-blur-md sm:items-center sm:p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-card p-5 shadow-focus sm:max-h-[85vh] sm:rounded-2xl sm:p-6"
+        className="max-h-[90vh] w-full max-w-md animate-slide-up overflow-y-auto rounded-t-3xl border border-border/80 bg-card p-5 shadow-focus sm:max-h-[85vh] sm:animate-scale-in sm:rounded-2xl sm:p-6"
         style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
       >
+        {/* handle bar mobile */}
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border/80 sm:hidden" />
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-display text-lg font-semibold">{titulo}</h3>
+          <h3 className="font-display text-lg font-bold tracking-tight">{titulo}</h3>
           <button
             onClick={onClose}
-            className="rounded-md p-2 text-muted-foreground hover:bg-surface"
+            className="grid size-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
             aria-label="Fechar"
           >
             <X className="size-4" />
