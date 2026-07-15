@@ -332,32 +332,32 @@ function SecaoAgora({ tarefa }: { tarefa: Tarefa | undefined }) {
         )}
       </div>
 
-      <div className="group relative flex min-h-[380px] flex-1 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-ember bg-surface p-8 shadow-focus sm:p-12">
+      <div className="group relative flex min-h-[280px] flex-1 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-ember bg-surface p-6 shadow-focus sm:min-h-[380px] sm:p-10 md:p-12">
         {/* brasa glow */}
         <div className="pointer-events-none absolute -bottom-24 -right-24 size-64 rounded-full bg-ember opacity-10 blur-[120px] transition-opacity duration-1000 group-hover:opacity-20" />
         <div className="pointer-events-none absolute -top-24 -left-24 size-48 rounded-full bg-ember opacity-[0.06] blur-[100px]" />
 
-        <div className="relative z-10 max-w-2xl text-center">
-          <div className="mb-4 flex items-center justify-center gap-2">
+        <div className="relative z-10 w-full max-w-2xl text-center">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
             <span className="inline-block size-2 animate-pulse rounded-full bg-ember" />
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-ember">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-ember sm:text-xs">
               Foco absoluto
             </p>
             {tarefa.prazo_estimado && (
               <>
                 <span className="text-muted-foreground/60">·</span>
-                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">
                   {formatarPrazo(tarefa.prazo_estimado)}
                 </span>
               </>
             )}
           </div>
 
-          <h2 className="font-display text-4xl font-extrabold leading-tight text-foreground sm:text-5xl md:text-6xl">
+          <h2 className="font-display text-2xl font-extrabold leading-tight text-foreground [overflow-wrap:anywhere] sm:text-4xl md:text-5xl lg:text-6xl">
             {tarefa.descricao_limpa}
           </h2>
 
-          <p className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">
+          <p className="mt-3 text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">
             {rotuloTipo(tarefa.tipo_demanda)}
           </p>
 
@@ -371,19 +371,19 @@ function SecaoAgora({ tarefa }: { tarefa: Tarefa | undefined }) {
             </div>
           )}
 
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center">
             <button
               onClick={async () => {
                 await concluirTarefa(tarefa.id);
                 invalidar();
               }}
-              className="rounded-2xl bg-ember px-8 py-4 text-base font-bold text-ember-foreground shadow-ember transition-all hover:brightness-110 active:scale-95 sm:px-10 sm:py-5 sm:text-lg"
+              className="w-full rounded-2xl bg-ember px-6 py-4 text-base font-bold text-ember-foreground shadow-ember transition-all hover:brightness-110 active:scale-95 sm:w-auto sm:px-10 sm:py-5 sm:text-lg"
             >
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center justify-center gap-2">
                 <Check className="size-5" /> Concluí
               </span>
             </button>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               <BotaoSecundario
                 onClick={async () => {
                   await adiarTarefa(tarefa.id, 15, tarefa.adiamentos);
@@ -406,7 +406,7 @@ function SecaoAgora({ tarefa }: { tarefa: Tarefa | undefined }) {
                 await descartarTarefa(tarefa.id);
                 invalidar();
               }}
-              className="rounded-2xl px-5 py-4 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive sm:py-5"
+              className="rounded-2xl px-5 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive sm:py-5"
             >
               Desistir
             </button>
