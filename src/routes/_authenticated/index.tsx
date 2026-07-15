@@ -998,7 +998,7 @@ function BotaoSecundario({
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-background px-5 py-4 text-sm font-medium text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground sm:py-5"
+      className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-border bg-background px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground sm:px-5 sm:py-5"
     >
       {children}
     </button>
