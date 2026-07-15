@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowLeft, Check, X } from "lucide-react";
+import { Check, X, History } from "lucide-react";
+import { PageHeader, EmptyState } from "@/components/page-header";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tarefa } from "@/lib/kiah-types";
 
@@ -33,16 +34,18 @@ function HistoricoPage() {
   const { data } = useSuspenseQuery(historicoQuery);
   return (
     <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Voltar
-      </Link>
-      <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Histórico</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Últimas 100 tarefas fechadas.</p>
+      <PageHeader
+        icon={History}
+        title="Histórico"
+        subtitle="Últimas 100 tarefas concluídas ou descartadas."
+      />
 
       {data.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-dashed border-border/60 bg-surface/30 px-5 py-10 text-center text-sm text-muted-foreground">
-          Nada no histórico ainda.
-        </p>
+        <EmptyState
+          icon={History}
+          title="Nada no histórico ainda"
+          subtitle="Assim que você concluir ou descartar uma tarefa, ela aparece aqui."
+        />
       ) : (
         <ul className="mt-8 divide-y divide-border rounded-xl border border-border bg-surface/40">
           {data.map((t) => {
