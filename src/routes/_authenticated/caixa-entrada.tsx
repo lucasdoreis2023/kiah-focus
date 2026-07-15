@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Check, ArrowLeft, Trash2, Inbox, ShoppingBasket, ClipboardList } from "lucide-react";
+import { Check, Trash2, Inbox, ShoppingBasket, ClipboardList } from "lucide-react";
+import { PageHeader, EmptyState } from "@/components/page-header";
 import {
   inboxTarefasQuery,
   inboxItensQuery,
@@ -49,30 +50,20 @@ function CaixaEntradaPage() {
 
   return (
     <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-      <Link
-        to="/"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" /> Voltar
-      </Link>
-
-      <div className="flex items-center gap-3">
-        <div className="grid size-10 shrink-0 place-items-center rounded-full border border-border bg-surface/60 text-ember">
-          <Inbox className="size-5" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Caixa de Entrada</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Capturado pela triagem — confirme para entrar no fluxo.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={Inbox}
+        title="Caixa de Entrada"
+        subtitle="Capturado pela triagem — confirme para entrar no fluxo."
+      />
 
       {total === 0 && (
-        <p className="mt-10 rounded-xl border border-dashed border-border/60 bg-surface/30 px-5 py-10 text-center text-sm text-muted-foreground">
-          Nada aguardando revisão. Tudo em dia.
-        </p>
+        <EmptyState
+          icon={Inbox}
+          title="Nada aguardando revisão"
+          subtitle="Você está em dia. Novas capturas da triagem aparecerão aqui."
+        />
       )}
+
 
       {/* ---------------- Tarefas ---------------- */}
       <SecaoTarefas

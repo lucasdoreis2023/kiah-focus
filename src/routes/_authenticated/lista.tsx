@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Check, Trash2, ArrowLeft } from "lucide-react";
+import { Check, Trash2, ShoppingBasket } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import {
   itensListaQuery,
   marcarItemComprado,
@@ -63,13 +64,11 @@ function ListaPage() {
 
   return (
     <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-      <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Voltar
-      </Link>
-      <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Lista de compras</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {itens.length} item{itens.length === 1 ? "" : "s"} em aberto.
-      </p>
+      <PageHeader
+        icon={ShoppingBasket}
+        title="Lista de compras"
+        subtitle={`${itens.length} item${itens.length === 1 ? "" : "s"} em aberto.`}
+      />
 
       {itens.length > 0 && (
         <div className="mt-6 flex flex-col gap-3 rounded-xl border border-border bg-surface/40 px-4 py-3 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
