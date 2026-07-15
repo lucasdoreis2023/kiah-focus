@@ -48,7 +48,7 @@ function CaixaEntradaPage() {
   const total = tarefas.length + itens.length;
 
   return (
-    <div className="mx-auto max-w-3xl p-5 sm:p-8">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
       <Link
         to="/"
         className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -57,11 +57,11 @@ function CaixaEntradaPage() {
       </Link>
 
       <div className="flex items-center gap-3">
-        <div className="grid size-10 place-items-center rounded-full border border-border bg-surface/60 text-ember">
+        <div className="grid size-10 shrink-0 place-items-center rounded-full border border-border bg-surface/60 text-ember">
           <Inbox className="size-5" />
         </div>
-        <div>
-          <h1 className="font-display text-3xl font-extrabold">Caixa de Entrada</h1>
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Caixa de Entrada</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             Capturado pela triagem — confirme para entrar no fluxo.
           </p>
@@ -134,7 +134,7 @@ function SecaoTarefas({
         </h2>
       </header>
 
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface/40 px-4 py-3 text-sm">
+      <div className="mb-3 flex flex-col gap-3 rounded-xl border border-border bg-surface/40 px-4 py-3 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
         <label className="flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
@@ -146,17 +146,17 @@ function SecaoTarefas({
             {sel.size > 0 ? `${sel.size} selecionada(s)` : "Selecionar todas"}
           </span>
         </label>
-        <div className="ml-auto flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
           <button
             onClick={confirmarSel}
             disabled={!sel.size}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ember/40 bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember hover:text-ember-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-ember/40 bg-ember/10 px-3 py-2 text-xs font-semibold text-ember hover:bg-ember hover:text-ember-foreground disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none sm:py-1.5"
           >
             <Check className="size-3.5" /> Confirmar selecionadas
           </button>
           <button
             onClick={confirmarTudo}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:border-foreground hover:text-foreground"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted-foreground hover:border-foreground hover:text-foreground sm:flex-none sm:py-1.5"
           >
             <Check className="size-3.5" /> Confirmar tudo
           </button>
@@ -262,7 +262,7 @@ function SecaoItens({
         </h2>
       </header>
 
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface/40 px-4 py-3 text-sm">
+      <div className="mb-3 flex flex-col gap-3 rounded-xl border border-border bg-surface/40 px-4 py-3 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
         <label className="flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"
@@ -274,17 +274,17 @@ function SecaoItens({
             {sel.size > 0 ? `${sel.size} selecionado(s)` : "Selecionar todos"}
           </span>
         </label>
-        <div className="ml-auto flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
           <button
             onClick={confirmarSel}
             disabled={!sel.size}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ember/40 bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember hover:text-ember-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-ember/40 bg-ember/10 px-3 py-2 text-xs font-semibold text-ember hover:bg-ember hover:text-ember-foreground disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none sm:py-1.5"
           >
             <Check className="size-3.5" /> Confirmar selecionados
           </button>
           <button
             onClick={confirmarTudo}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:border-foreground hover:text-foreground"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted-foreground hover:border-foreground hover:text-foreground sm:flex-none sm:py-1.5"
           >
             <Check className="size-3.5" /> Confirmar tudo
           </button>

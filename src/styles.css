@@ -108,11 +108,40 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    /* evita scroll horizontal por título/URL longos em telas pequenas */
+    overflow-x: hidden;
+  }
+
+  html {
+    /* melhora rolagem em iOS e evita zoom acidental em inputs <16px */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    text-wrap: pretty;
   }
 
   h1, h2, h3, h4 {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+
+  img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* botões e alvos de toque com no mínimo 40px em mobile */
+  button, [role="button"], a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* inputs em iOS: 16px evita auto-zoom ao focar */
+  @media (max-width: 640px) {
+    input, select, textarea {
+      font-size: 16px;
+    }
   }
 }
 

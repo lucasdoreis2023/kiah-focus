@@ -155,16 +155,16 @@ function PainelKiah() {
     <div className="flex min-h-screen w-full bg-background text-foreground selection:bg-ember/30">
       <SidebarKiah />
 
-      <main className="flex min-h-screen flex-1 flex-col">
+      <main className="flex min-h-screen min-w-0 flex-1 flex-col">
         {/* HEADER */}
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-5 py-4 sm:flex sm:flex-wrap sm:justify-between sm:px-8">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-4 py-3 sm:flex sm:flex-wrap sm:justify-between sm:gap-3 sm:px-6 sm:py-4 lg:px-8">
           <div className="flex min-w-0 items-center gap-2 text-sm">
-            <span className="text-muted-foreground">{saudacao},</span>
+            <span className="hidden text-muted-foreground sm:inline">{saudacao},</span>
             <span className="truncate font-semibold text-foreground">
               {nome || "aqui é Kiah"}
             </span>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <TriagemBotao />
             <span className="hidden h-4 w-px bg-border sm:block" />
             <NovaTarefaBotao />
@@ -174,9 +174,9 @@ function PainelKiah() {
         </header>
 
         {/* CONTENT */}
-        <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-5 sm:p-8">
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 sm:gap-8 sm:p-6 lg:p-8">
           {precisaVincularWa && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ember/40 bg-ember/10 px-5 py-4 text-sm">
+            <div className="grid grid-cols-1 gap-3 rounded-2xl border border-ember/40 bg-ember/10 px-4 py-4 text-sm sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
               <div className="flex min-w-0 items-start gap-3">
                 <MessageCircle className="mt-0.5 size-5 shrink-0 text-ember" />
                 <div className="min-w-0">
@@ -191,7 +191,7 @@ function PainelKiah() {
               </div>
               <Link
                 to="/perfil"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ember px-4 py-2 text-sm font-bold text-ember-foreground hover:brightness-110"
+                className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-ember px-4 py-2.5 text-sm font-bold text-ember-foreground hover:brightness-110 sm:w-auto"
               >
                 Vincular agora
               </Link>
@@ -200,7 +200,7 @@ function PainelKiah() {
 
           <SecaoAgora tarefa={agora} />
 
-          <div className="mb-4 grid gap-8 lg:grid-cols-2">
+          <div className="mb-4 grid gap-6 lg:grid-cols-2 lg:gap-8">
             <SecaoASeguir tarefas={aSeguir} escondido={restanteEscondido} />
             <SecaoLista itensPorCategoria={itensPorCategoria} total={itens.length} />
           </div>
@@ -332,32 +332,32 @@ function SecaoAgora({ tarefa }: { tarefa: Tarefa | undefined }) {
         )}
       </div>
 
-      <div className="group relative flex min-h-[380px] flex-1 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-ember bg-surface p-8 shadow-focus sm:p-12">
+      <div className="group relative flex min-h-[280px] flex-1 flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-ember bg-surface p-6 shadow-focus sm:min-h-[380px] sm:p-10 md:p-12">
         {/* brasa glow */}
         <div className="pointer-events-none absolute -bottom-24 -right-24 size-64 rounded-full bg-ember opacity-10 blur-[120px] transition-opacity duration-1000 group-hover:opacity-20" />
         <div className="pointer-events-none absolute -top-24 -left-24 size-48 rounded-full bg-ember opacity-[0.06] blur-[100px]" />
 
-        <div className="relative z-10 max-w-2xl text-center">
-          <div className="mb-4 flex items-center justify-center gap-2">
+        <div className="relative z-10 w-full max-w-2xl text-center">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
             <span className="inline-block size-2 animate-pulse rounded-full bg-ember" />
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-ember">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-ember sm:text-xs">
               Foco absoluto
             </p>
             {tarefa.prazo_estimado && (
               <>
                 <span className="text-muted-foreground/60">·</span>
-                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">
                   {formatarPrazo(tarefa.prazo_estimado)}
                 </span>
               </>
             )}
           </div>
 
-          <h2 className="font-display text-4xl font-extrabold leading-tight text-foreground sm:text-5xl md:text-6xl">
+          <h2 className="font-display text-2xl font-extrabold leading-tight text-foreground [overflow-wrap:anywhere] sm:text-4xl md:text-5xl lg:text-6xl">
             {tarefa.descricao_limpa}
           </h2>
 
-          <p className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">
+          <p className="mt-3 text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">
             {rotuloTipo(tarefa.tipo_demanda)}
           </p>
 
@@ -371,19 +371,19 @@ function SecaoAgora({ tarefa }: { tarefa: Tarefa | undefined }) {
             </div>
           )}
 
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center">
             <button
               onClick={async () => {
                 await concluirTarefa(tarefa.id);
                 invalidar();
               }}
-              className="rounded-2xl bg-ember px-8 py-4 text-base font-bold text-ember-foreground shadow-ember transition-all hover:brightness-110 active:scale-95 sm:px-10 sm:py-5 sm:text-lg"
+              className="w-full rounded-2xl bg-ember px-6 py-4 text-base font-bold text-ember-foreground shadow-ember transition-all hover:brightness-110 active:scale-95 sm:w-auto sm:px-10 sm:py-5 sm:text-lg"
             >
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center justify-center gap-2">
                 <Check className="size-5" /> Concluí
               </span>
             </button>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               <BotaoSecundario
                 onClick={async () => {
                   await adiarTarefa(tarefa.id, 15, tarefa.adiamentos);
@@ -406,7 +406,7 @@ function SecaoAgora({ tarefa }: { tarefa: Tarefa | undefined }) {
                 await descartarTarefa(tarefa.id);
                 invalidar();
               }}
-              className="rounded-2xl px-5 py-4 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive sm:py-5"
+              className="rounded-2xl px-5 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive sm:py-5"
             >
               Desistir
             </button>
@@ -598,7 +598,7 @@ function BotaoSair() {
   return (
     <button
       onClick={sair}
-      className="grid size-9 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+      className="grid size-10 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground sm:size-9"
       aria-label="Sair"
       title="Sair"
     >
@@ -648,11 +648,11 @@ function NovaTarefaBotao() {
               placeholder="Ex: Lançar frequência do 9º ano"
               className="w-full rounded-lg bg-input px-3 py-2.5 text-sm outline-none ring-ring focus:ring-2"
             />
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <select
                 value={tipo}
                 onChange={(e) => setTipo(e.target.value as TipoDemanda)}
-                className="flex-1 rounded-lg bg-input px-3 py-2.5 text-sm"
+                className="w-full rounded-lg bg-input px-3 py-2.5 text-sm"
               >
                 {TIPOS_TAREFA.filter((t) => t.value !== "lista_compras").map((t) => (
                   <option key={t.value} value={t.value}>
@@ -664,7 +664,7 @@ function NovaTarefaBotao() {
                 type="datetime-local"
                 value={prazo}
                 onChange={(e) => setPrazo(e.target.value)}
-                className="flex-1 rounded-lg bg-input px-3 py-2.5 text-sm"
+                className="w-full rounded-lg bg-input px-3 py-2.5 text-sm"
               />
             </div>
             <button
@@ -849,9 +849,9 @@ function TriagemBotao() {
     <>
       <button
         onClick={() => setAberto(true)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-ember px-3 py-1.5 text-sm font-medium text-ember transition-colors hover:bg-ember/10 sm:px-4 sm:py-2"
+        className="inline-flex items-center gap-1.5 rounded-full border border-ember px-2.5 py-1.5 text-sm font-medium text-ember transition-colors hover:bg-ember/10 sm:px-4 sm:py-2"
       >
-        <Sparkles className="size-4" /> Triar
+        <Sparkles className="size-4" /> <span>Triar</span>
       </button>
       {aberto && (
         <Modal
@@ -957,17 +957,18 @@ function Modal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-focus"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-card p-5 shadow-focus sm:max-h-[85vh] sm:rounded-2xl sm:p-6"
+        style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold">{titulo}</h3>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-muted-foreground hover:bg-surface"
+            className="rounded-md p-2 text-muted-foreground hover:bg-surface"
             aria-label="Fechar"
           >
             <X className="size-4" />
@@ -997,7 +998,7 @@ function BotaoSecundario({
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-background px-5 py-4 text-sm font-medium text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground sm:py-5"
+      className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-border bg-background px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground sm:px-5 sm:py-5"
     >
       {children}
     </button>

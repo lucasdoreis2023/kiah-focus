@@ -32,11 +32,11 @@ export const Route = createFileRoute("/_authenticated/historico")({
 function HistoricoPage() {
   const { data } = useSuspenseQuery(historicoQuery);
   return (
-    <div className="mx-auto max-w-3xl p-5 sm:p-8">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
       <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" /> Voltar
       </Link>
-      <h1 className="font-display text-3xl font-extrabold">Histórico</h1>
+      <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Histórico</h1>
       <p className="mt-1 text-sm text-muted-foreground">Últimas 100 tarefas fechadas.</p>
 
       {data.length === 0 ? (
