@@ -51,10 +51,11 @@
   --font-display: "Urbanist", system-ui, sans-serif;
   --font-sans: "Epilogue", system-ui, sans-serif;
 
-  --shadow-focus: 0 20px 80px -20px oklch(0.62 0.19 40 / 0.35);
-  --shadow-ember: 0 0 40px -5px oklch(0.62 0.19 40 / 0.25);
+  --shadow-focus: 0 24px 90px -24px oklch(0.62 0.19 40 / 0.45), 0 2px 0 oklch(1 0 0 / 0.04) inset;
+  --shadow-ember: 0 10px 40px -12px oklch(0.62 0.19 40 / 0.55), 0 0 0 1px oklch(0.62 0.19 40 / 0.15);
   --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.4), 0 8px 24px -12px oklch(0 0 0 / 0.5);
-  --shadow-card: 0 1px 0 oklch(1 0 0 / 0.03) inset, 0 8px 32px -16px oklch(0 0 0 / 0.4);
+  --shadow-card: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 10px 40px -18px oklch(0 0 0 / 0.55);
+  --shadow-lift: 0 1px 0 oklch(1 0 0 / 0.05) inset, 0 20px 50px -22px oklch(0 0 0 / 0.7);
 }
 
 :root {
