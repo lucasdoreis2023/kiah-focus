@@ -62,17 +62,17 @@ function ListaPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl p-5 sm:p-8">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
       <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" /> Voltar
       </Link>
-      <h1 className="font-display text-3xl font-extrabold">Lista de compras</h1>
+      <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Lista de compras</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {itens.length} item{itens.length === 1 ? "" : "s"} em aberto.
       </p>
 
       {itens.length > 0 && (
-        <div className="mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface/40 px-4 py-3 text-sm">
+        <div className="mt-6 flex flex-col gap-3 rounded-xl border border-border bg-surface/40 px-4 py-3 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
           <label className="flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
@@ -84,17 +84,17 @@ function ListaPage() {
               {selecionados.size > 0 ? `${selecionados.size} selecionado(s)` : "Selecionar todos"}
             </span>
           </label>
-          <div className="ml-auto flex gap-2">
+          <div className="flex flex-wrap gap-2 sm:ml-auto">
             <button
               onClick={deletarSelecionados}
               disabled={!selecionados.size}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:border-destructive hover:text-destructive disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted-foreground hover:border-destructive hover:text-destructive disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none sm:py-1.5"
             >
               <Trash2 className="size-3.5" /> Deletar selecionados
             </button>
             <button
               onClick={deletarTudo}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground sm:flex-none sm:py-1.5"
             >
               <Trash2 className="size-3.5" /> Deletar tudo
             </button>
