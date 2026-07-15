@@ -48,7 +48,7 @@ function CaixaEntradaPage() {
   const total = tarefas.length + itens.length;
 
   return (
-    <div className="mx-auto max-w-3xl p-5 sm:p-8">
+    <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
       <Link
         to="/"
         className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -57,11 +57,11 @@ function CaixaEntradaPage() {
       </Link>
 
       <div className="flex items-center gap-3">
-        <div className="grid size-10 place-items-center rounded-full border border-border bg-surface/60 text-ember">
+        <div className="grid size-10 shrink-0 place-items-center rounded-full border border-border bg-surface/60 text-ember">
           <Inbox className="size-5" />
         </div>
-        <div>
-          <h1 className="font-display text-3xl font-extrabold">Caixa de Entrada</h1>
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Caixa de Entrada</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             Capturado pela triagem — confirme para entrar no fluxo.
           </p>
