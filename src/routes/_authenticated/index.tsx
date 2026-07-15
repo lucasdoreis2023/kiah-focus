@@ -155,16 +155,16 @@ function PainelKiah() {
     <div className="flex min-h-screen w-full bg-background text-foreground selection:bg-ember/30">
       <SidebarKiah />
 
-      <main className="flex min-h-screen flex-1 flex-col">
+      <main className="flex min-h-screen min-w-0 flex-1 flex-col">
         {/* HEADER */}
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-5 py-4 sm:flex sm:flex-wrap sm:justify-between sm:px-8">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-4 py-3 sm:flex sm:flex-wrap sm:justify-between sm:gap-3 sm:px-6 sm:py-4 lg:px-8">
           <div className="flex min-w-0 items-center gap-2 text-sm">
-            <span className="text-muted-foreground">{saudacao},</span>
+            <span className="hidden text-muted-foreground sm:inline">{saudacao},</span>
             <span className="truncate font-semibold text-foreground">
               {nome || "aqui é Kiah"}
             </span>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <TriagemBotao />
             <span className="hidden h-4 w-px bg-border sm:block" />
             <NovaTarefaBotao />
@@ -174,9 +174,9 @@ function PainelKiah() {
         </header>
 
         {/* CONTENT */}
-        <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-5 sm:p-8">
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 sm:gap-8 sm:p-6 lg:p-8">
           {precisaVincularWa && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ember/40 bg-ember/10 px-5 py-4 text-sm">
+            <div className="grid grid-cols-1 gap-3 rounded-2xl border border-ember/40 bg-ember/10 px-4 py-4 text-sm sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:px-5">
               <div className="flex min-w-0 items-start gap-3">
                 <MessageCircle className="mt-0.5 size-5 shrink-0 text-ember" />
                 <div className="min-w-0">
@@ -191,7 +191,7 @@ function PainelKiah() {
               </div>
               <Link
                 to="/perfil"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ember px-4 py-2 text-sm font-bold text-ember-foreground hover:brightness-110"
+                className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-ember px-4 py-2.5 text-sm font-bold text-ember-foreground hover:brightness-110 sm:w-auto"
               >
                 Vincular agora
               </Link>
@@ -200,7 +200,7 @@ function PainelKiah() {
 
           <SecaoAgora tarefa={agora} />
 
-          <div className="mb-4 grid gap-8 lg:grid-cols-2">
+          <div className="mb-4 grid gap-6 lg:grid-cols-2 lg:gap-8">
             <SecaoASeguir tarefas={aSeguir} escondido={restanteEscondido} />
             <SecaoLista itensPorCategoria={itensPorCategoria} total={itens.length} />
           </div>
