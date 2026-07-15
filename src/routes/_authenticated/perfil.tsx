@@ -140,11 +140,11 @@ function PerfilPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl p-5 sm:p-8">
+    <div className="mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
       <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" /> Voltar
       </Link>
-      <h1 className="font-display text-3xl font-extrabold">Perfil</h1>
+      <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Perfil</h1>
 
       <div className="mt-8 space-y-4 rounded-xl border border-border bg-surface/40 p-6">
         <Campo label="Nome" valor={nome || "—"} />
