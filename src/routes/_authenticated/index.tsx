@@ -851,7 +851,7 @@ function TriagemBotao() {
         onClick={() => setAberto(true)}
         className="inline-flex items-center gap-1.5 rounded-full border border-ember px-2.5 py-1.5 text-sm font-medium text-ember transition-colors hover:bg-ember/10 sm:px-4 sm:py-2"
       >
-        <Sparkles className="size-4" /> <span className="hidden xs:inline sm:inline">Triar</span>
+        <Sparkles className="size-4" /> <span>Triar</span>
       </button>
       {aberto && (
         <Modal
