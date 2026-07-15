@@ -18,7 +18,7 @@ const itens = [
 export function MobileBottomNav() {
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/90 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70 md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Navegação principal"
     >
@@ -30,10 +30,15 @@ export function MobileBottomNav() {
               <Link
                 to={it.to}
                 activeOptions={{ exact: it.exact }}
-                className="flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-ember"
+                className="group relative flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-semibold text-muted-foreground transition-colors duration-200 hover:text-foreground data-[status=active]:text-ember"
               >
-                <Icon className="size-5" />
-                <span className="leading-none">{it.label}</span>
+                {/* barra ember superior no ativo */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-6 top-0 h-0.5 rounded-full bg-ember opacity-0 transition-opacity duration-200 group-data-[status=active]:opacity-100"
+                />
+                <Icon className="size-5 transition-transform duration-200 group-data-[status=active]:scale-110" />
+                <span className="leading-none tracking-wide">{it.label}</span>
               </Link>
             </li>
           );
