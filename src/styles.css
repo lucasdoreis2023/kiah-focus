@@ -6,8 +6,8 @@
 
 /*
  * Kiah — Segundo Cérebro
- * Charcoal & Ember: escuro premium, brasa quente pontual (foco absoluto no AGORA).
- * Urbanist (títulos) + Epilogue (corpo).
+ * Cloud White: base clara, arejada e moderna com azul elétrico como acento.
+ * Outfit (títulos) + Figtree (corpo).
  */
 
 @theme inline {
@@ -35,6 +35,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
 
+  /* "ember" mantido como nome semântico do acento (agora azul elétrico) */
   --color-ember: var(--ember);
   --color-ember-foreground: var(--ember-foreground);
 
@@ -48,56 +49,56 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
 
-  --font-display: "Urbanist", system-ui, sans-serif;
-  --font-sans: "Epilogue", system-ui, sans-serif;
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-sans: "Figtree", system-ui, sans-serif;
 
-  --shadow-focus: 0 24px 90px -24px oklch(0.62 0.19 40 / 0.45), 0 2px 0 oklch(1 0 0 / 0.04) inset;
-  --shadow-ember: 0 10px 40px -12px oklch(0.62 0.19 40 / 0.55), 0 0 0 1px oklch(0.62 0.19 40 / 0.15);
-  --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.4), 0 8px 24px -12px oklch(0 0 0 / 0.5);
-  --shadow-card: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 10px 40px -18px oklch(0 0 0 / 0.55);
-  --shadow-lift: 0 1px 0 oklch(1 0 0 / 0.05) inset, 0 20px 50px -22px oklch(0 0 0 / 0.7);
+  --shadow-focus: 0 24px 60px -24px oklch(0.62 0.22 258 / 0.35), 0 2px 0 oklch(1 0 0 / 0.6) inset;
+  --shadow-ember: 0 12px 32px -12px oklch(0.62 0.22 258 / 0.35), 0 0 0 1px oklch(0.62 0.22 258 / 0.12);
+  --shadow-soft: 0 1px 2px oklch(0.7 0.02 260 / 0.08), 0 8px 24px -12px oklch(0.5 0.05 260 / 0.12);
+  --shadow-card: 0 1px 0 oklch(1 0 0 / 0.9) inset, 0 6px 24px -12px oklch(0.5 0.05 260 / 0.10);
+  --shadow-lift: 0 2px 0 oklch(1 0 0 / 0.9) inset, 0 18px 40px -18px oklch(0.4 0.05 260 / 0.22);
 }
 
 :root {
-  --radius: 0.9rem;
+  --radius: 1rem;
 
-  /* Charcoal & Ember — hex targets: #1a1a1a / #2d2d2d / #4a4a4a / #e85d3a */
-  --background: oklch(0.18 0 0);          /* #1a1a1a */
-  --foreground: oklch(0.96 0 0);          /* #f5f5f5 */
+  /* Cloud White — hex targets: #fafbfc / #e8ecf1 / #94a3b8 / #3b82f6 */
+  --background: oklch(0.99 0.003 250);       /* #fafbfc */
+  --foreground: oklch(0.22 0.02 260);        /* slate-900 */
 
-  --surface: oklch(0.26 0 0);             /* #2d2d2d */
-  --surface-2: oklch(0.30 0 0);
+  --surface: oklch(1 0 0);                    /* branco puro para cartões */
+  --surface-2: oklch(0.97 0.006 250);         /* #e8ecf1 leve */
 
-  --card: oklch(0.26 0 0);
-  --card-foreground: oklch(0.96 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 260);
 
-  --muted: oklch(0.34 0 0);
-  --muted-foreground: oklch(0.68 0 0);    /* #a1a1a1 */
+  --muted: oklch(0.96 0.006 250);
+  --muted-foreground: oklch(0.55 0.02 258);   /* #94a3b8ish */
 
-  --border: oklch(0.40 0 0);              /* #4a4a4a */
-  --input: oklch(0.30 0 0);
-  --ring: oklch(0.62 0.19 40);
+  --border: oklch(0.92 0.008 255);            /* linha suave */
+  --input: oklch(0.95 0.006 255);
+  --ring: oklch(0.62 0.22 258);               /* #3b82f6 */
 
-  /* Ember — brasa quente */
-  --ember: oklch(0.62 0.19 40);           /* #e85d3a */
-  --ember-foreground: oklch(0.99 0.01 40);
+  /* Ember (semântico) — agora azul vibrante */
+  --ember: oklch(0.62 0.22 258);              /* #3b82f6 */
+  --ember-foreground: oklch(0.99 0.01 258);
 
-  --primary: oklch(0.62 0.19 40);
-  --primary-foreground: oklch(0.99 0.01 40);
+  --primary: oklch(0.62 0.22 258);
+  --primary-foreground: oklch(0.99 0.01 258);
 
-  --accent: oklch(0.30 0 0);
-  --accent-foreground: oklch(0.96 0 0);
+  --accent: oklch(0.96 0.02 258);
+  --accent-foreground: oklch(0.35 0.15 258);
 
-  --urgent: oklch(0.62 0.19 40);
-  --urgent-foreground: oklch(0.99 0.01 40);
+  --urgent: oklch(0.62 0.22 258);
+  --urgent-foreground: oklch(0.99 0.01 258);
 
-  --success: oklch(0.72 0.16 150);
-  --success-foreground: oklch(0.15 0.02 150);
+  --success: oklch(0.70 0.16 155);
+  --success-foreground: oklch(0.16 0.03 155);
 
-  --warning: oklch(0.80 0.18 85);
-  --warning-foreground: oklch(0.20 0.03 85);
+  --warning: oklch(0.80 0.17 75);
+  --warning-foreground: oklch(0.22 0.05 75);
 
-  --destructive: oklch(0.60 0.24 25);
+  --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.99 0.01 25);
 }
 
@@ -115,62 +116,50 @@
     overflow-x: hidden;
   }
 
-  html {
-    -webkit-text-size-adjust: 100%;
-  }
+  html { -webkit-text-size-adjust: 100%; }
 
   body {
     text-wrap: pretty;
-    /* sutil textura de gradiente radial para dar profundidade */
+    /* Sopros de cor suaves para dar leveza sem poluir */
     background-image:
-      radial-gradient(1200px 600px at 85% -10%, oklch(0.62 0.19 40 / 0.06), transparent 60%),
-      radial-gradient(900px 500px at -10% 110%, oklch(0.62 0.19 40 / 0.04), transparent 60%);
+      radial-gradient(1000px 500px at 90% -10%, oklch(0.62 0.22 258 / 0.10), transparent 60%),
+      radial-gradient(800px 500px at -10% 110%, oklch(0.75 0.15 200 / 0.08), transparent 60%),
+      radial-gradient(700px 400px at 50% 120%, oklch(0.82 0.14 340 / 0.06), transparent 60%);
     background-attachment: fixed;
   }
 
   h1, h2, h3, h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.015em;
+    letter-spacing: -0.02em;
     overflow-wrap: anywhere;
   }
 
-  img, video, canvas, svg {
-    max-width: 100%;
-    height: auto;
-  }
+  img, video, canvas, svg { max-width: 100%; height: auto; }
 
-  button, [role="button"], a {
-    -webkit-tap-highlight-color: transparent;
-  }
+  button, [role="button"], a { -webkit-tap-highlight-color: transparent; }
 
-  /* Focus ring consistente e acessível */
   :where(button, a, input, select, textarea, [role="button"]):focus-visible {
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
     border-radius: calc(var(--radius) - 2px);
   }
 
-  /* scrollbar mais discreta */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.35 0 0);
+    background: oklch(0.88 0.008 255);
     border-radius: 999px;
     border: 2px solid var(--color-background);
   }
-  ::-webkit-scrollbar-thumb:hover { background: oklch(0.45 0 0); }
+  ::-webkit-scrollbar-thumb:hover { background: oklch(0.78 0.01 255); }
 
-  /* seleção */
   ::selection {
-    background: oklch(0.62 0.19 40 / 0.35);
+    background: oklch(0.62 0.22 258 / 0.22);
     color: var(--color-foreground);
   }
 
-  /* inputs em iOS: 16px evita auto-zoom ao focar */
   @media (max-width: 640px) {
-    input, select, textarea {
-      font-size: 16px;
-    }
+    input, select, textarea { font-size: 16px; }
   }
 }
 
@@ -178,47 +167,45 @@
   box-shadow: var(--shadow-ember);
 }
 
-/* Cartão padrão do sistema */
 @utility card-kiah {
-  background: color-mix(in oklab, var(--color-surface) 55%, transparent);
+  background: color-mix(in oklab, var(--color-surface) 92%, transparent);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
+  backdrop-filter: saturate(1.05);
   transition: border-color 220ms ease, background-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
 }
 
 @utility card-kiah-hover {
   &:hover {
-    border-color: color-mix(in oklab, var(--color-ember) 40%, var(--color-border));
-    background: color-mix(in oklab, var(--color-surface) 75%, transparent);
-    transform: translateY(-1px);
+    border-color: color-mix(in oklab, var(--color-ember) 45%, var(--color-border));
+    background: var(--color-surface);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-lift);
   }
 }
 
-/* Lift sutil (uso genérico em qualquer elemento) */
 @utility hover-lift {
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease, border-color 220ms ease;
   &:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-lift);
   }
 }
 
-/* Botões */
 @utility btn-ember {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--color-ember) 100%, white 6%), var(--color-ember));
+  background: linear-gradient(180deg, color-mix(in oklab, var(--color-ember) 100%, white 8%), var(--color-ember));
   color: var(--color-ember-foreground);
   font-weight: 700;
   padding: 0.625rem 1rem;
   box-shadow: var(--shadow-ember);
   transition: filter 180ms ease, transform 120ms ease, box-shadow 200ms ease;
-  &:hover { filter: brightness(1.08); }
+  &:hover { filter: brightness(1.05); }
   &:active { transform: scale(0.97); }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
@@ -230,26 +217,24 @@
   gap: 0.5rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  background: color-mix(in oklab, var(--color-surface) 60%, transparent);
+  background: color-mix(in oklab, var(--color-surface) 80%, transparent);
   color: var(--color-muted-foreground);
   font-weight: 500;
   padding: 0.5rem 0.875rem;
   transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease, transform 120ms ease;
   &:hover {
     color: var(--color-foreground);
-    border-color: color-mix(in oklab, var(--color-muted-foreground) 60%, var(--color-border));
+    border-color: color-mix(in oklab, var(--color-ember) 40%, var(--color-border));
     background: var(--color-surface);
   }
   &:active { transform: scale(0.97); }
 }
 
-/* Divisor sutil com fade lateral */
 @utility divider-fade {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--color-border), transparent);
 }
 
-/* Chip / label pequenos consistentes */
 @utility chip {
   display: inline-flex;
   align-items: center;
@@ -261,11 +246,10 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   border: 1px solid var(--color-border);
-  background: color-mix(in oklab, var(--color-surface) 60%, transparent);
+  background: color-mix(in oklab, var(--color-surface) 80%, transparent);
   color: var(--color-muted-foreground);
 }
 
-/* animações leves */
 @keyframes kiah-fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -279,33 +263,24 @@
   to   { opacity: 1; transform: scale(1); }
 }
 @keyframes kiah-ember-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.62 0.19 40 / 0.45); }
-  50%      { box-shadow: 0 0 0 10px oklch(0.62 0.19 40 / 0); }
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.62 0.22 258 / 0.45); }
+  50%      { box-shadow: 0 0 0 12px oklch(0.62 0.22 258 / 0); }
 }
 @keyframes kiah-shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
-@utility animate-fade-in {
-  animation: kiah-fade-in 320ms ease-out both;
-}
-@utility animate-slide-up {
-  animation: kiah-slide-up 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@utility animate-scale-in {
-  animation: kiah-scale-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@utility ember-pulse {
-  animation: kiah-ember-pulse 2.4s ease-out infinite;
-}
+@utility animate-fade-in { animation: kiah-fade-in 320ms ease-out both; }
+@utility animate-slide-up { animation: kiah-slide-up 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@utility animate-scale-in { animation: kiah-scale-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@utility ember-pulse { animation: kiah-ember-pulse 2.4s ease-out infinite; }
 @utility skeleton-shimmer {
   background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-surface) 85%, white 4%), transparent);
   background-size: 200% 100%;
   animation: kiah-shimmer 1.6s ease-in-out infinite;
 }
 
-/* Respeita usuários que preferem menos movimento */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
