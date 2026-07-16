@@ -263,8 +263,8 @@
   to   { opacity: 1; transform: scale(1); }
 }
 @keyframes kiah-ember-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.62 0.22 258 / 0.45); }
-  50%      { box-shadow: 0 0 0 12px oklch(0.62 0.22 258 / 0); }
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.72 0.19 150 / 0.50); }
+  50%      { box-shadow: 0 0 0 12px oklch(0.72 0.19 150 / 0); }
 }
 @keyframes kiah-shimmer {
   0% { background-position: -200% 0; }
