@@ -120,11 +120,11 @@
 
   body {
     text-wrap: pretty;
-    /* Sopros de cor suaves para dar leveza sem poluir */
+    /* Sopros de cor Fresh Citrus — verde, ciano e amarelo suaves */
     background-image:
-      radial-gradient(1000px 500px at 90% -10%, oklch(0.62 0.22 258 / 0.10), transparent 60%),
-      radial-gradient(800px 500px at -10% 110%, oklch(0.75 0.15 200 / 0.08), transparent 60%),
-      radial-gradient(700px 400px at 50% 120%, oklch(0.82 0.14 340 / 0.06), transparent 60%);
+      radial-gradient(1000px 500px at 90% -10%, oklch(0.72 0.19 150 / 0.14), transparent 60%),
+      radial-gradient(800px 500px at -10% 110%, oklch(0.75 0.13 210 / 0.12), transparent 60%),
+      radial-gradient(700px 400px at 50% 120%, oklch(0.82 0.17 90 / 0.10), transparent 60%);
     background-attachment: fixed;
   }
 
