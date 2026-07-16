@@ -154,7 +154,7 @@
   ::-webkit-scrollbar-thumb:hover { background: oklch(0.78 0.01 255); }
 
   ::selection {
-    background: oklch(0.62 0.22 258 / 0.22);
+    background: oklch(0.72 0.19 150 / 0.22);
     color: var(--color-foreground);
   }
 
