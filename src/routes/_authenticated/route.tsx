@@ -9,10 +9,14 @@ export const Route = createFileRoute("/_authenticated")({
     // que getUser() em cada navegação. O token é validado no servidor
     // quando as server functions rodam via requireSupabaseAuth.
     const { data } = await supabase.auth.getSession();
-    if (!data.session?.user) {
-      throw redirect({ to: "/auth" });
-    }
-    return { user: data.session.user };
+    if (data.session?.user) return { user: data.session.user };
+
+    // No preview o storage da sessão é assíncrono (broker): a sessão pode
+    // ainda não estar disponível aqui. Sem esta segunda checagem os dois
+    // guards se contradizem e o app entra em loop de redirect (tela branca).
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) throw redirect({ to: "/auth" });
+    return { user: userData.user };
   },
   component: AuthenticatedLayout,
 });
