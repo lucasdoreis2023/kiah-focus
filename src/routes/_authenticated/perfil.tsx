@@ -17,6 +17,7 @@ import {
   sincronizarGruposEvolution,
 } from "@/lib/kiah-grupos.functions";
 import { RefreshCw } from "lucide-react";
+import { AlertasConfig, TemasGrupo } from "@/components/alertas-config";
 
 
 type Grupo = {
@@ -24,6 +25,7 @@ type Grupo = {
   grupo_jid: string;
   grupo_nome: string | null;
   permitido: boolean;
+  temas?: string[] | null;
   detectado_em: string;
   ultima_mensagem_em: string;
 };
@@ -244,6 +246,8 @@ function PerfilPage() {
         </div>
       </section>
 
+      <AlertasConfig />
+
       {/* Grupos de WhatsApp — allowlist */}
       <section className="mt-8 rounded-xl border border-border bg-surface/40 p-6">
         <div className="mb-1 flex items-center gap-2">
@@ -378,10 +382,20 @@ function PerfilPage() {
                     >
                       {g.permitido ? "Triando" : "Ignorado"}
                     </span>
+                    {g.permitido && (
+                      <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                        sem repetição
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
                     {g.grupo_jid}
                   </p>
+                  <TemasGrupo
+                    id={g.id}
+                    temas={g.temas ?? []}
+                    onSalvo={() => void recarregarGrupos()}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <button

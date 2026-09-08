@@ -6,11 +6,34 @@ export const listarMeusGrupos = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("grupos_whatsapp")
-      .select("id, grupo_jid, grupo_nome, permitido, detectado_em, ultima_mensagem_em")
+      .select("id, grupo_jid, grupo_nome, permitido, temas, detectado_em, ultima_mensagem_em")
       .eq("user_id", context.userId)
       .order("ultima_mensagem_em", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
+  });
+
+/** Atualiza os temas monitorados de um grupo (filtro barato antes da IA). */
+export const salvarTemasGrupo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string; temas: string[] }) => {
+    if (typeof input?.id !== "string" || !Array.isArray(input?.temas)) {
+      throw new Error("Entrada inválida.");
+    }
+    const temas = input.temas
+      .map((t) => String(t).trim())
+      .filter((t) => t.length > 1)
+      .slice(0, 40);
+    return { id: input.id, temas };
+  })
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("grupos_whatsapp")
+      .update({ temas: data.temas })
+      .eq("id", data.id)
+      .eq("user_id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true, temas: data.temas };
   });
 
 export const alternarGrupoPermitido = createServerFn({ method: "POST" })
