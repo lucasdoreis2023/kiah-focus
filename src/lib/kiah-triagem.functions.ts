@@ -84,9 +84,14 @@ Regras:
      da escola.
    - "descricao_limpa": UMA frase curta imperativa. Ex: "Pagar aluguel".
    - "prazo_iso": ISO 8601 com offset -03:00 quando houver prazo claro, senão null.
-   - "subtipo": "sugestao_material" quando for uma IDEIA/sugestão de criar
-     material pedagógico sem pedido concreto nem prazo. Caso contrário null.
+   - "subtipo": "sugestao_material" SOMENTE quando existe necessidade CONCRETA
+     de preparar/criar/adaptar material pedagógico (há pedido, turma, conteúdo
+     ou contexto real que exige o material), porém sem urgência imediata — a
+     sugestão será oferecida na janela inteligente do dia. Caso contrário null.
      Sugestão é sugestão, não cobrança: nunca marque como urgente.
+     Mera ideia, menção, possibilidade, brainstorm ou conversa geral sobre
+     aula/material SEM necessidade concreta => "ruido": true e NENHUMA tarefa.
+     NUNCA transforme menção genérica a aula/material em tarefa.
 3. Para CADA item a comprar, um objeto em "itens_compra" com "descricao" e
    "categoria" em: Supermercado, Papelaria, Farmácia, Casa, Outros.
 4. Nada acionável → "ruido": true e arrays vazios.
