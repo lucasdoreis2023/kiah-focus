@@ -100,11 +100,13 @@ export async function executarCicloAlertas(opcoes: { simular?: boolean } = {}) {
       continue;
     }
 
+    // Corte na origem: só tarefas pendentes E confirmadas na Caixa de Entrada.
     const { data: linhas } = await supabaseAdmin
       .from("tarefas")
       .select(CAMPOS_TAREFA)
       .eq("user_id", userId)
       .eq("status", "pendente")
+      .eq("confirmado", true)
       .order("prazo_estimado", { ascending: true, nullsFirst: false });
 
     const tarefas = (linhas ?? []) as unknown as TarefaAlerta[];
