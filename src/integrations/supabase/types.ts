@@ -22,6 +22,7 @@ export type Database = {
           grupo_nome: string | null
           id: string
           permitido: boolean
+          temas: string[]
           ultima_mensagem_em: string
           updated_at: string
           user_id: string
@@ -33,6 +34,7 @@ export type Database = {
           grupo_nome?: string | null
           id?: string
           permitido?: boolean
+          temas?: string[]
           ultima_mensagem_em?: string
           updated_at?: string
           user_id: string
@@ -44,6 +46,7 @@ export type Database = {
           grupo_nome?: string | null
           id?: string
           permitido?: boolean
+          temas?: string[]
           ultima_mensagem_em?: string
           updated_at?: string
           user_id?: string
@@ -98,6 +101,36 @@ export type Database = {
         }
         Relationships: []
       }
+      kiah_envios_log: {
+        Row: {
+          enviado_em: string
+          id: string
+          metadados: Json | null
+          motivo: string | null
+          tarefa_id: string | null
+          tipo_envio: string
+          user_id: string
+        }
+        Insert: {
+          enviado_em?: string
+          id?: string
+          metadados?: Json | null
+          motivo?: string | null
+          tarefa_id?: string | null
+          tipo_envio: string
+          user_id: string
+        }
+        Update: {
+          enviado_em?: string
+          id?: string
+          metadados?: Json | null
+          motivo?: string | null
+          tarefa_id?: string | null
+          tipo_envio?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mensagens_dialogo: {
         Row: {
           criado_em: string
@@ -127,6 +160,54 @@ export type Database = {
           processado_em?: string | null
           push_name?: string | null
           texto?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      preferencias_alerta: {
+        Row: {
+          alertas_pausados: boolean
+          cobrar_fim_de_semana: boolean
+          created_at: string
+          intervalo_min_minutos: number
+          max_proativos_dia: number
+          quiet_end: number
+          quiet_start: number
+          resumo_manha: string
+          resumo_meiodia: string
+          resumo_noite: string
+          temas_padrao_grupos: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alertas_pausados?: boolean
+          cobrar_fim_de_semana?: boolean
+          created_at?: string
+          intervalo_min_minutos?: number
+          max_proativos_dia?: number
+          quiet_end?: number
+          quiet_start?: number
+          resumo_manha?: string
+          resumo_meiodia?: string
+          resumo_noite?: string
+          temas_padrao_grupos?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alertas_pausados?: boolean
+          cobrar_fim_de_semana?: boolean
+          created_at?: string
+          intervalo_min_minutos?: number
+          max_proativos_dia?: number
+          quiet_end?: number
+          quiet_start?: number
+          resumo_manha?: string
+          resumo_meiodia?: string
+          resumo_noite?: string
+          temas_padrao_grupos?: string[]
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -161,16 +242,26 @@ export type Database = {
       tarefas: {
         Row: {
           adiamentos: number
+          alertas_dia_ref: string | null
+          alertas_enviados: number
+          alertas_hoje: number
           cadencia_alerta_minutos: number
+          canal: string
           concluida_em: string | null
           confirmado: boolean
           contexto: Json | null
           created_at: string
           descricao_limpa: string
+          descricao_norm: string | null
           id: string
+          id_curto: string | null
           origem: Database["public"]["Enums"]["origem_demanda"]
           prazo_estimado: string | null
+          recebida_em: string
+          silenciada_ate: string | null
           status: Database["public"]["Enums"]["status_demanda"]
+          subtipo: string | null
+          sugerida_em: string | null
           tipo_demanda: Database["public"]["Enums"]["tipo_demanda"]
           ultimo_alerta_em: string | null
           updated_at: string
@@ -178,16 +269,26 @@ export type Database = {
         }
         Insert: {
           adiamentos?: number
+          alertas_dia_ref?: string | null
+          alertas_enviados?: number
+          alertas_hoje?: number
           cadencia_alerta_minutos?: number
+          canal?: string
           concluida_em?: string | null
           confirmado?: boolean
           contexto?: Json | null
           created_at?: string
           descricao_limpa: string
+          descricao_norm?: string | null
           id?: string
+          id_curto?: string | null
           origem?: Database["public"]["Enums"]["origem_demanda"]
           prazo_estimado?: string | null
+          recebida_em?: string
+          silenciada_ate?: string | null
           status?: Database["public"]["Enums"]["status_demanda"]
+          subtipo?: string | null
+          sugerida_em?: string | null
           tipo_demanda?: Database["public"]["Enums"]["tipo_demanda"]
           ultimo_alerta_em?: string | null
           updated_at?: string
@@ -195,16 +296,26 @@ export type Database = {
         }
         Update: {
           adiamentos?: number
+          alertas_dia_ref?: string | null
+          alertas_enviados?: number
+          alertas_hoje?: number
           cadencia_alerta_minutos?: number
+          canal?: string
           concluida_em?: string | null
           confirmado?: boolean
           contexto?: Json | null
           created_at?: string
           descricao_limpa?: string
+          descricao_norm?: string | null
           id?: string
+          id_curto?: string | null
           origem?: Database["public"]["Enums"]["origem_demanda"]
           prazo_estimado?: string | null
+          recebida_em?: string
+          silenciada_ate?: string | null
           status?: Database["public"]["Enums"]["status_demanda"]
+          subtipo?: string | null
+          sugerida_em?: string | null
           tipo_demanda?: Database["public"]["Enums"]["tipo_demanda"]
           ultimo_alerta_em?: string | null
           updated_at?: string
