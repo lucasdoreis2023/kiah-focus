@@ -17,6 +17,7 @@ import {
   sincronizarGruposEvolution,
 } from "@/lib/kiah-grupos.functions";
 import { RefreshCw } from "lucide-react";
+import { AlertasConfig, TemasGrupo } from "@/components/alertas-config";
 
 
 type Grupo = {
@@ -24,6 +25,7 @@ type Grupo = {
   grupo_jid: string;
   grupo_nome: string | null;
   permitido: boolean;
+  temas?: string[] | null;
   detectado_em: string;
   ultima_mensagem_em: string;
 };
