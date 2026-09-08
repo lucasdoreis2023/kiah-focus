@@ -380,10 +380,20 @@ function PerfilPage() {
                     >
                       {g.permitido ? "Triando" : "Ignorado"}
                     </span>
+                    {g.permitido && (
+                      <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                        sem repetição
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
                     {g.grupo_jid}
                   </p>
+                  <TemasGrupo
+                    id={g.id}
+                    temas={g.temas ?? []}
+                    onSalvo={() => void recarregarGrupos()}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <button
