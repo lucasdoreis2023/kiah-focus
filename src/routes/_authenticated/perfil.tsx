@@ -246,6 +246,8 @@ function PerfilPage() {
         </div>
       </section>
 
+      <AlertasConfig />
+
       {/* Grupos de WhatsApp — allowlist */}
       <section className="mt-8 rounded-xl border border-border bg-surface/40 p-6">
         <div className="mb-1 flex items-center gap-2">
