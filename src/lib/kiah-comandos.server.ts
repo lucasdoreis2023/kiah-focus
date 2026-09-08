@@ -46,20 +46,40 @@ export async function resolverPorPrefixo(
   return { tarefa: achados[0] };
 }
 
-/** Tarefa alertada mais recentemente nas últimas 24h (para comandos sem código). */
-export async function ultimaAlertada(db: DB, userId: string): Promise<TarefaRef | null> {
+const TIPOS_PROATIVOS_LOG = ["resumo_manha", "resumo_meiodia", "resumo_noite", "urgente"];
+
+/**
+ * Tarefas do ÚLTIMO envio proativo das últimas 24h (kiah_envios_log.metadados.tarefas),
+ * filtradas pelas que continuam pendentes/adiadas.
+ */
+export async function tarefasDoUltimoAviso(db: DB, userId: string): Promise<TarefaRef[]> {
   const limite = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { data } = await db
+    .from("kiah_envios_log")
+    .select("tarefa_id, metadados, enviado_em, tipo_envio")
+    .eq("user_id", userId)
+    .in("tipo_envio", TIPOS_PROATIVOS_LOG)
+    .gte("enviado_em", limite)
+    .order("enviado_em", { ascending: false })
+    .limit(1);
+  const log = (data ?? [])[0];
+  if (!log) return [];
+
+  const brutos: unknown = (log.metadados ?? {})["tarefas"];
+  const ids = Array.isArray(brutos)
+    ? (brutos as unknown[]).filter((x): x is string => typeof x === "string")
+    : log.tarefa_id
+      ? [log.tarefa_id as string]
+      : [];
+  if (ids.length === 0) return [];
+
+  const { data: tarefas } = await db
     .from("tarefas")
-    .select("id, id_curto, descricao_limpa, adiamentos, ultimo_alerta_em")
+    .select("id, id_curto, descricao_limpa, adiamentos")
     .eq("user_id", userId)
     .in("status", ["pendente", "adiada"])
-    .not("ultimo_alerta_em", "is", null)
-    .gte("ultimo_alerta_em", limite)
-    .order("ultimo_alerta_em", { ascending: false })
-    .limit(1);
-  const linha = (data ?? [])[0];
-  return linha ? (linha as TarefaRef) : null;
+    .in("id", ids);
+  return (tarefas ?? []) as TarefaRef[];
 }
 
 async function alvoDoComando(
@@ -68,14 +88,20 @@ async function alvoDoComando(
   prefixo: string | undefined,
 ): Promise<{ tarefa?: TarefaRef; erro?: string }> {
   if (prefixo) return resolverPorPrefixo(db, userId, prefixo);
-  const t = await ultimaAlertada(db, userId);
-  if (!t) {
+
+  const candidatas = await tarefasDoUltimoAviso(db, userId);
+  if (candidatas.length === 1) return { tarefa: candidatas[0] };
+  if (candidatas.length > 1) {
     return {
       erro:
-        '🤔 Não sei a qual tarefa você se refere. Manda o código, ex: "feito abc123" (ou peça *tarefas* para ver a lista).',
+        `🔎 O último aviso tinha ${candidatas.length} tarefas. Diga *feito <código>*:\n` +
+        candidatas.slice(0, 5).map((t) => `• [${idCurtoDe(t)}] ${t.descricao_limpa}`).join("\n"),
     };
   }
-  return { tarefa: t };
+  return {
+    erro:
+      '🤔 Não sei a qual tarefa você se refere. Manda o código, ex: "feito abc123" (ou peça *tarefas* para ver a lista).',
+  };
 }
 
 export async function tentarComando(texto: string, userId: string): Promise<ResultadoComando> {
