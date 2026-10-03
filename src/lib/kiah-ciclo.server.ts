@@ -134,9 +134,7 @@ export async function executarCicloAlertas(opcoes: { simular?: boolean } = {}) {
     const antigas = pega("antiga").length;
 
     const janela = janelaAtual(prefs, p);
-    const minutosDesdeUltimo = ultimoEm
-      ? (agora.getTime() - ultimoEm.getTime()) / 60000
-      : Infinity;
+    const minutosDesdeUltimo = ultimoEm ? (agora.getTime() - ultimoEm.getTime()) / 60000 : Infinity;
 
     const urgentes = elegiveis.filter((t) => ehUrgenciaReal(t, agora));
 
@@ -192,7 +190,10 @@ export async function executarCicloAlertas(opcoes: { simular?: boolean } = {}) {
           ...bloco("Sugestões de material", sugestoes),
         ];
         if (antigas) {
-          linhasMsg.push(``, `🗂️ ${antigas} pendência(s) com mais de 7 dias esperam revisão no app.`);
+          linhasMsg.push(
+            ``,
+            `🗂️ ${antigas} pendência(s) com mais de 7 dias esperam revisão no app.`,
+          );
         }
       } else if (janela === "meiodia") {
         const atencao = [...pega("urgente"), ...pega("vence_hoje"), ...pega("vencida_recente")];
@@ -229,7 +230,10 @@ export async function executarCicloAlertas(opcoes: { simular?: boolean } = {}) {
           ...bloco("Sugestões de material", sugestoes),
         ];
       }
-      linhasMsg.push(``, `_"feito <código>" · "adiar <código> 30" · "silenciar <código>" · "pausar alertas"_`);
+      linhasMsg.push(
+        ``,
+        `_"feito <código>" · "adiar <código> 30" · "silenciar <código>" · "pausar alertas"_`,
+      );
     }
 
     const texto = linhasMsg.join("\n");
@@ -293,7 +297,15 @@ export async function executarCicloAlertas(opcoes: { simular?: boolean } = {}) {
 
   const dialogos = await varrerDialogos(supabaseAdmin, agora, simular);
 
-  return { ok: true, agoraBRT: p, simulado: simular, envios: envios.length, relatorio, dialogos, mensagens: envios.map((e) => e.texto) };
+  return {
+    ok: true,
+    agoraBRT: p,
+    simulado: simular,
+    envios: envios.length,
+    relatorio,
+    dialogos,
+    mensagens: envios.map((e) => e.texto),
+  };
 }
 
 /**
@@ -327,22 +339,23 @@ async function varrerDialogos(supabaseAdmin: any, agora: Date, simular: boolean)
       const userId = msgs[0].user_id;
       const jid = msgs[0].jid;
       const nome = msgs.find((m: any) => m.push_name)?.push_name ?? "contato";
-      const transcript = msgs
-        .map((m: any) => `${m.from_me ? "Eu" : nome}: ${m.texto}`)
-        .join("\n");
+      const transcript = msgs.map((m: any) => `${m.from_me ? "Eu" : nome}: ${m.texto}`).join("\n");
 
       const contexto = `Segue um diálogo de WhatsApp entre o dono ("Eu") e um contato ("${nome}"). Analise a CONVERSA INTEIRA e extraia SOMENTE o que ficou PENDENTE PARA O DONO fazer, lembrar ou comprar como consequência deste diálogo. Ignore saudações, respostas curtas, assuntos resolvidos, promessas do contato e tudo que não gere ação concreta para o dono. Se nada ficou pendente para o dono, retorne ruido=true.\n\n=== DIÁLOGO ===\n${transcript}\n=== FIM ===`;
 
       let extraiu = 0;
       try {
-        const { triarMensagem } = await import("@/lib/kiah-triagem.functions");
-        const res = await triarMensagem({
-          data: { texto: contexto, origem: "whatsapp_terceiros", user_id: userId },
+        const { triarMensagemInterna } = await import("@/lib/kiah-triagem.server");
+        const res = await triarMensagemInterna({
+          texto: contexto,
+          origem: "whatsapp_terceiros",
+          user_id: userId,
         });
         extraiu =
           (res.resultado?.tarefas?.length ?? 0) + (res.resultado?.itens_compra?.length ?? 0);
       } catch (e) {
         console.error("[dialogo] triagem falhou", e);
+        continue; // Preserve pending messages so the next cycle can retry.
       }
 
       await supabaseAdmin

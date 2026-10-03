@@ -38,6 +38,10 @@ export const Route = createFileRoute("/api/public/alertas-persistentes")({
       GET: async () => json({ ok: true, hint: "Cron do Kiah. Use POST." }),
 
       POST: async ({ request }) => {
+        const { integrationAuthorized } = await import("@/lib/kiah-integration-auth.server");
+        if (!integrationAuthorized(request, process.env.KIAH_CRON_SECRET)) {
+          return json({ ok: false, error: "Não autorizado" }, 401);
+        }
         let simular = false;
         try {
           const body = (await request.json()) as { simular?: boolean } | null;

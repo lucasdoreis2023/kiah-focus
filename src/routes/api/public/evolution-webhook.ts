@@ -90,6 +90,10 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
       GET: async () => json({ ok: true, hint: "Evolution webhook ativo. Use POST." }),
 
       POST: async ({ request }) => {
+        const { integrationAuthorized } = await import("@/lib/kiah-integration-auth.server");
+        if (!integrationAuthorized(request, process.env.KIAH_WEBHOOK_SECRET)) {
+          return json({ ok: false, error: "Não autorizado" }, 401);
+        }
         let payload: EvolutionPayload;
         try {
           payload = (await request.json()) as EvolutionPayload;
@@ -97,6 +101,12 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           return json({ ok: false, error: "JSON inválido" }, 400);
         }
 
+        if (
+          !process.env.EVOLUTION_INSTANCE ||
+          payload.instance !== process.env.EVOLUTION_INSTANCE
+        ) {
+          return json({ ok: false, error: "Instância inválida" }, 403);
+        }
         const evento = payload.event ?? "";
         if (!/messages[._-]upsert/i.test(evento)) {
           return json({ ok: true, ignorado: `evento ${evento}` });
@@ -107,9 +117,8 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         const fromMe = d?.key?.fromMe === true;
         const messageId = d?.key?.id ?? "";
 
-        const { jidParaNumero, numeroKiah, enviarWhatsApp, baixarMidiaBase64 } = await import(
-          "@/lib/kiah-whatsapp.server"
-        );
+        const { jidParaNumero, numeroKiah, enviarWhatsApp, baixarMidiaBase64 } =
+          await import("@/lib/kiah-whatsapp.server");
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         // Dedupe de retentativas da Evolution
@@ -185,16 +194,14 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
           }
 
           try {
-            const { triarMensagem } = await import("@/lib/kiah-triagem.functions");
-            const res = await triarMensagem({
-              data: {
-                texto,
-                origem: "whatsapp_terceiros",
-                user_id: perfilInstancia.id,
-                canal: "grupo",
-                grupo_nome: existente.grupo_nome ?? nomeGrupo ?? null,
-                grupo_jid: jid,
-              },
+            const { triarMensagemInterna } = await import("@/lib/kiah-triagem.server");
+            const res = await triarMensagemInterna({
+              texto,
+              origem: "whatsapp_terceiros",
+              user_id: perfilInstancia.id,
+              canal: "grupo",
+              grupo_nome: existente.grupo_nome ?? nomeGrupo ?? null,
+              grupo_jid: jid,
             });
             return json({ ...res, ok: true, canal: "grupo", tema, silenciado: true });
           } catch (e) {
@@ -240,7 +247,10 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         }
 
         // Anti-loop: eco das próprias mensagens do Kiah
-        if (fromMe && /^\s*(?:✅|🛒|📅|⏳|🔥|📘|📝|🗑️|🤔|🫧|⚠️|🤖|📭|✓|🔕|🔔|🌅|🌙|☀️|🗂️|🔎|💬|👥)/.test(texto)) {
+        if (
+          fromMe &&
+          /^\s*(?:✅|🛒|📅|⏳|🔥|📘|📝|🗑️|🤔|🫧|⚠️|🤖|📭|✓|🔕|🔔|🌅|🌙|☀️|🗂️|🔎|💬|👥)/.test(texto)
+        ) {
           return json({ ok: true, ignorado: "eco_bot" });
         }
 
@@ -309,18 +319,16 @@ export const Route = createFileRoute("/api/public/evolution-webhook")({
         }
 
         try {
-          const { triarMensagem } = await import("@/lib/kiah-triagem.functions");
-          const res = await triarMensagem({
-            data: {
-              texto,
-              origem: "whatsapp_pessoal",
-              imagem_base64,
-              imagem_mime,
-              audio_base64,
-              audio_format,
-              user_id: userId,
-              canal: "direto",
-            },
+          const { triarMensagemInterna } = await import("@/lib/kiah-triagem.server");
+          const res = await triarMensagemInterna({
+            texto,
+            origem: "whatsapp_pessoal",
+            imagem_base64,
+            imagem_mime,
+            audio_base64,
+            audio_format,
+            user_id: userId,
+            canal: "direto",
           });
           // Silêncio: o que foi criado aparece na Caixa de Entrada do app.
           return json({ ...res, ok: true, silenciado: true });
